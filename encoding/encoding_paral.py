@@ -1,7 +1,3 @@
-"""
-Encoding module
-"""
-
 # General imports
 import argparse as ap
 from multiprocessing import Pool, Array
@@ -32,6 +28,9 @@ def parse_args():
     parser = ap.ArgumentParser(description="Encoding algorithm.")
     parser.add_argument("docking_program", type=str,
                         help="Path to folder containing the PDB files.")
+    parser.add_argument("-c","--n_proc", type=int,
+                        help='Number of processor.', default = 1)
+
 
     parsed_args = parser.parse_args()
     return parsed_args
@@ -82,11 +81,11 @@ def encode_file(file_name, atom_lines):
         line = linecache.getline(file_name[1], l+1)            
         df.loc[q] = [line[30:38], line[38:46], line[46:54]]
     array[file_name[0],:] = df.values.flatten()
-    print(file_name[0], array[file_name[0],:])
     linecache.clearcache()
 
 def main(args):
     """
+
     Parameters
     ----------
     args : argparse.Namespace
@@ -101,10 +100,21 @@ def main(args):
                   for f in os.listdir(f'{args.docking_program}/') 
                   if f.endswith(".pdb")]
 
-    array = np.zeros((len(file_names), 9))
-    for idx, file_name in enumerate(file_names): 
-        encode_file((idx,file_name), atom_lines = [i,j,k])
-    df_result = pd.DataFrame(array,
+    array = Array('d', np.zeros((len(file_names) *  9)), lock = False)
+    
+    def init_arr(array):
+        globals()['array'] = \
+            np.frombuffer(array, dtype='float').reshape(len(file_names), 9)
+    
+    # Paralelize the encoding loop
+    encode_file_paral = partial(encode_file,
+                                atom_lines = [i,j,k])
+    
+    Pool(args.n_proc, initializer=init_arr, initargs=(array,)).map(
+        encode_file_paral, enumerate(file_names))
+    
+    result = np.frombuffer(array, dtype=float).reshape(len(file_names), 9)
+    df_result = pd.DataFrame(result,
         columns=['x1','y1','z1','x2','y2','z2','x3','y3','z3'])
     df_result.to_csv(f'result_{args.docking_program}.csv', index=False)
      
