@@ -1,7 +1,7 @@
 import os 
-import mdtraj as md
 import argparse as ap
 from multiprocessing import Pool
+from functools import partial
 
 def parse_args():
     """
@@ -15,57 +15,46 @@ def parse_args():
     parsed_args : argparse.Namespace
         It contains the command-line arguments that are supplied by the user
     """
-    parser = ap.ArgumentParser(description="Generate all PDBs.")
+    parser = ap.ArgumentParser(description="Aligment of PDB structures.")
     parser.add_argument("path", type=str,
-                        help="Path to the LightDock simulation simulation.")
+                        help="Path to folder containing the PDBs to align.")
+    parser.add_argument("chain_query", type=str,
+                        help="Chain query.")
     parser.add_argument("ref_receptor_pdb", type=str,
                         help="Path to reference receptor protein PDB to align the outputs.")
+    parser.add_argument("chain_ref", type=str,
+                        help="Chain ref.")
     parser.add_argument("-c","--n_proc", type=int,
                         help='Number of processor.', default = 1)
 
     parsed_args = parser.parse_args()
     return parsed_args
 
-def align_structures(folder):
+def align_structure(file, aligner, chain):
     """
-    It aligns all the structures of a swarm output folder of a LightDock docking. 
-    Take into account that it remove the oriignal (unaligned) structure to save space. 
-
+    It aligns the given PDB 
     Parameters
     ----------
     folder : str
         Path to the swarm folder.
     """
-    query_files = [os.path.join(folder[1],file) for file in 
-                   os.listdir(folder[1]) if file.startswith('lightdock_')]
-    
-    # Load reference receptor structure
-    ref_traj = md.load(args.ref_receptor_pdb)
-    top_ref = ref_traj.topology
-    atoms_to_align_ref = top_ref.select("chainid 0")
-    
-    # Iterates over the docking poses generated for this swarm
-    for query_structure in query_files:
-        query_traj = md.load(query_structure)
-        top_query = query_traj.topology
-        atoms_to_align_query = top_ref.select("chainid 0")
-        query_traj.superpose(ref_traj, atom_indices = atoms_to_align_query,  
-            ref_atom_indices = atoms_to_align_ref)
-
-        output_path = query_structure.replace('.pdb', '_aligned.pdb')
-        query_traj.save(output_path)
-        os.remove(query_structure)
+    aligner.align(pdb_query = file[1], chain_query = chain)
 
 def main(args):
     """
-    It iterates (in parallel) over all the swam folders to aligned the generated poses to the 
-    reference receptor structure. 
+    It iterates (in parallel) over all the PDB files in the folder to aligned the generated poses to the 
+    reference structure. 
     """
-    folders = [os.path.join(args.path,folder) for folder in 
-               os.listdir(args.path) if folder.startswith('swarm_')]
+    files = [os.path.join(args.path,file) for file in 
+               os.listdir(args.path) if file.endswith('.pdb')]
 
+
+    from align import Aligner 
+    align_structures_paral = partial(align_structure,
+                                aligner = Aligner(pdb_ref = args.ref_receptor_pdb, chain_ref = args.chain_ref),
+                                chain = args.chain_query)
     with Pool(args.n_proc) as p:
-        list(p.imap(align_structures, enumerate(folders)))
+        list(p.imap(align_structures_paral, enumerate(files)))
 
 if __name__ == '__main__':
     args = parse_args()
