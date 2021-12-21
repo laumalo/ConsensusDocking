@@ -6,13 +6,13 @@ import numpy as np
 class ParserLightDock:
     def __init__(self, working_dir='.', score_filename='gso_100.out'):
         """
-        It initializes and ParserLightDock object.
+        It initializes a ParserLightDock object.
         Parameters
         ----------
         working_dir : str
             Path to the folder containing all the folders for each program.
         score_filename : str
-            Name of the score.
+            Name of the score file.
         """
         self.working_dir = working_dir
         self.program = 'lightdock'

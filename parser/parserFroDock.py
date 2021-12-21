@@ -6,13 +6,13 @@ import numpy as np
 class ParserFroDock:
     def __init__(self, working_dir='.', score_filename='dock.dat'):
         """
-        It initializes and ParserFroDock object.
+        It initializes a ParserFroDock object.
         Parameters
         ----------
         working_dir : str
             Path to the folder containing all the folders for each program.
         score_filename : str
-            Name of the score.
+            Name of the score file.
         """
         self.working_dir = working_dir
         self.program = 'frodock'
