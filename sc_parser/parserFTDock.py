@@ -3,8 +3,8 @@ import pandas as pd
 import numpy as np
 
 
-class ParserZDock:
-    def __init__(self, working_dir='.', score_filename='zdock.ene'):
+class ParserFTDock:
+    def __init__(self, working_dir='.', score_filename='ftdock.ene'):
         """
         It initializes a ParserFTDock object.
         Parameters
@@ -15,7 +15,7 @@ class ParserZDock:
             Name of the score file.
         """
         self.working_dir = working_dir
-        self.program = 'zdock'
+        self.program = 'ftdock'
         self.score_filename = score_filename
         self.norm_score_filename = 'norm_score.csv'
         self.df = None
@@ -63,7 +63,7 @@ class ParserZDock:
         columns_to_save = ['norm_ids', 'Total', 'norm_score']
         header_names = ['ids', 'total_score', 'norm_score']
         if 'norm_score' not in self.df.columns:
-            message = "You must normalize (parser.norm()) before saving the csv with the normalized score."
+            message = "You must normalize (sc_parser.norm()) before saving the csv with the normalized score."
             raise AttributeError(message)
         norm_score_file_path = os.path.join(self.working_dir, self.program, self.norm_score_filename)
         self.df.to_csv(norm_score_file_path, columns=columns_to_save, header=header_names, index=False)

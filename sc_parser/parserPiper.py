@@ -2,11 +2,10 @@ import os
 import pandas as pd
 import numpy as np
 
-
-class ParserRosetta:
-    def __init__(self, working_dir='.', score_filename='score_global_dock.sc'):
+class ParserPiper:
+    def __init__(self, working_dir='.', score_filename='ft.000.00'):
         """
-        It initializes a ParserRosetta object.
+        It initializes a ParserPiper object.
         Parameters
         ----------
         working_dir : str
@@ -15,7 +14,7 @@ class ParserRosetta:
             Name of the score file.
         """
         self.working_dir = working_dir
-        self.program = 'rosetta'
+        self.program = 'piper'
         self.score_filename = score_filename
         self.norm_score_filename = 'norm_score.csv'
         self.df = None
@@ -25,7 +24,9 @@ class ParserRosetta:
         It reads the scoring file and saves it to self.df
         """
         scoring_file_path = os.path.join(self.working_dir, self.program, self.score_filename)
-        self.df = pd.read_csv(scoring_file_path, delimiter='\s+', skiprows=[0])
+        header_list = ['rot_index', 'x_trans', 'y_trans', 'z_trans', 'total_score', 'repulsive_vdw', 'attractive_vdw',
+                       'coulomb_elect', 'born_approx_elect', 'pairwise_potential']
+        self.df = pd.read_csv(scoring_file_path, delimiter='\s+', header=None, names=header_list)
 
     def __norm_scores(self):
         """
@@ -39,7 +40,7 @@ class ParserRosetta:
         """
         It normalizes the ids names (program_ + id number) and adds a new column to self.df with the normalized ids.
         """
-        self.df['norm_ids'] = f'{self.program}_' + self.df.description.str[-5:]
+        self.df['norm_ids'] = f'{self.program}_' + self.df.rot_index.map(str)
 
     def __sort_by_norm_score(self):
         """
@@ -63,7 +64,7 @@ class ParserRosetta:
         columns_to_save = ['norm_ids', 'total_score', 'norm_score']
         header_names = ['ids', 'total_score', 'norm_score']
         if 'norm_score' not in self.df.columns:
-            message = "You must normalize (parser.norm()) before saving the csv with the normalized the data."
+            message = "You must normalize (sc_parser.norm()) before saving the csv with the normalized score."
             raise AttributeError(message)
         norm_score_file_path = os.path.join(self.working_dir, self.program, self.norm_score_filename)
         self.df.to_csv(norm_score_file_path, columns=columns_to_save, header=header_names, index=False)

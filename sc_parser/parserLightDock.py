@@ -93,7 +93,7 @@ class ParserLightDock:
         columns_to_save = ['norm_ids', 'Scoring', 'norm_score']
         header_names = ['ids', 'total_score', 'norm_score']
         if 'norm_score' not in self.df.columns:
-            message = "You must normalize (parser.norm()) before saving the csv with the normalized score."
+            message = "You must normalize (sc_parser.norm()) before saving the csv with the normalized score."
             raise AttributeError(message)
         norm_score_file_path = os.path.join(self.working_dir, self.program, self.norm_score_filename)
         self.df.to_csv(norm_score_file_path, columns=columns_to_save, header=header_names, index=False)
