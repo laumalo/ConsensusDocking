@@ -59,7 +59,7 @@ class ParserLightDock:
 
     def __norm_scores(self):
         """
-        It normalizes the score being 1 the best (the most negative) and 0 the worst (the most positive) and adds a new
+        It normalizes the score being 1 the best (the most positive) and 0 the worst (the most negative) and adds a new
         column to self.df with the normalized score
         """
         scores = np.array(pd.to_numeric(self.df.Scoring))
