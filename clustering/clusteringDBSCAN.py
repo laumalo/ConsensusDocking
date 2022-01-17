@@ -19,7 +19,7 @@ class ClusteringDBSCAN:
             It can be: [‘cityblock’, ‘cosine’, ‘euclidean’, ‘l1’, ‘l2’, ‘manhattan’] and [‘braycurtis’, ‘canberra’, 
             ‘chebyshev’, ‘correlation’, ‘dice’, ‘hamming’, ‘jaccard’, ‘kulsinski’, ‘mahalanobis’, ‘minkowski’, 
             ‘rogerstanimoto’, ‘russellrao’,‘seuclidean’, ‘sokalmichener’, ‘sokalsneath’, ‘sqeuclidean’, ‘yule’]
-        metric_param : array_like for mahalanobis/ int for minkowski / 1D array_like for seuclidean
+        metric_param : array_like for mahalanobis/ int for minkowski / 1D array_like for seuclidean / otherwise None
             Extra parameter needed for some metrics.
             Mahalanobis:
                 The inverse of the covariance matrix.
