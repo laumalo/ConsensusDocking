@@ -3,7 +3,8 @@ from sklearn.cluster import DBSCAN
 
 
 class ClusteringDBSCAN:
-    def __init__(self, df, eps=3 * 8, metric='euclidean', metric_param=None, min_samples=5, data_weight=None):
+    def __init__(self, df, eps=3 * 8, metric='euclidean', metric_param=None, min_samples=5, data_weight=None,
+                 n_jobs=None):
         """
         It initializes a ClusteringDBSCAN object.
         Parameters
@@ -34,6 +35,8 @@ class ClusteringDBSCAN:
             Weight of each sample, such that a sample with a weight of at least min_samples is
             by itself a core sample; a sample with a negative weight may inhibit its
             eps-neighbor from being core. Note that weights are absolute, and default to 1.
+        n_jobs: int
+            The number of parallel jobs to run. None means 1. -1 means using all processors.
         """
         self.data = df
         self.eps = eps  # epsilon parameter in DBSCAN algorithm
@@ -47,13 +50,14 @@ class ClusteringDBSCAN:
         if metric == 'minkowski':
             assert metric_param is not None, "metric_param should be an int value: p = 1, this is equivalent to using" \
                                              " manhattan_distance (l1), and euclidean_distance (l2) for p = 2."
-            self.model = DBSCAN(min_samples=self.min_samples, eps=self.eps, metric=self.metric, p=metric_param)
+            self.model = DBSCAN(min_samples=self.min_samples, eps=self.eps, metric=self.metric, p=metric_param,
+                                n_jobs=n_jobs)
         elif metric == 'mahalanobis':
             raise NotImplementedError("Still not implemented. Try another metric.")
         elif metric == 'seuclidean':
             raise NotImplementedError("Still not implemented. Try another metric.")
         else:
-            self.model = DBSCAN(min_samples=self.min_samples, eps=self.eps, metric=self.metric)
+            self.model = DBSCAN(min_samples=self.min_samples, eps=self.eps, metric=self.metric, n_jobs=n_jobs)
 
     def __validate_input(self):
         """

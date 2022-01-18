@@ -3,7 +3,8 @@ from sklearn.cluster import OPTICS
 
 
 class ClusteringOPTICS:
-    def __init__(self, df, metric='minkowski', metric_param=None, cluster_method='xi', xi=None, eps=None, min_samples=5):
+    def __init__(self, df, metric='minkowski', metric_param=None, cluster_method='xi', xi=None, eps=None,
+                 min_samples=5, n_jobs=None):
         """
         df : Pandas DataFrame
             DataFrame containing the data to be used for the clustering.
@@ -34,6 +35,8 @@ class ClusteringOPTICS:
         min_samples : int
             The number of samples (or total weight) in a neighborhood for a point to be
             considered as a core point. This includes the point itself.
+        n_jobs: int
+            The number of parallel jobs to run. None means 1. -1 means using all processors.
         """
         self.data = df
         self.cluster_method = cluster_method.lower()
@@ -49,13 +52,13 @@ class ClusteringOPTICS:
             assert metric_param is not None, "metric_param should be an int value: p = 1, this is equivalent to using" \
                                              " manhattan_distance (l1), and euclidean_distance (l2) for p = 2."
             self.model = OPTICS(min_samples=self.min_samples, xi=self.xi, eps=self.eps, metric=self.metric,
-                                p=metric_param)
+                                p=metric_param, n_jobs=n_jobs)
         elif metric == 'mahalanobis':
             raise NotImplementedError("Still not implemented. Try another metric.")
         elif metric == 'seuclidean':
             raise NotImplementedError("Still not implemented. Try another metric.")
         else:
-            self.model = OPTICS(min_samples=self.min_samples, xi=self.xi, eps=self.eps, metric=self.metric)
+            self.model = OPTICS(min_samples=self.min_samples, xi=self.xi, eps=self.eps, metric=self.metric, n_jobs=n_jobs)
 
     def __validate_input(self):
         """
