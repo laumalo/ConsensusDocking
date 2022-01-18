@@ -54,9 +54,9 @@ class ClusteringOPTICS:
             self.model = OPTICS(min_samples=self.min_samples, xi=self.xi, eps=self.eps, metric=self.metric,
                                 p=metric_param, n_jobs=n_jobs)
         elif metric == 'mahalanobis':
-            raise NotImplementedError("Still not implemented. Try another metric.")
+            raise ModuleNotFoundError("Still not implemented. Try another metric.")
         elif metric == 'seuclidean':
-            raise NotImplementedError("Still not implemented. Try another metric.")
+            raise ModuleNotFoundError("Still not implemented. Try another metric.")
         else:
             self.model = OPTICS(min_samples=self.min_samples, xi=self.xi, eps=self.eps, metric=self.metric, n_jobs=n_jobs)
 

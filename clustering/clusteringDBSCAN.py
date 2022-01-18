@@ -53,9 +53,9 @@ class ClusteringDBSCAN:
             self.model = DBSCAN(min_samples=self.min_samples, eps=self.eps, metric=self.metric, p=metric_param,
                                 n_jobs=n_jobs)
         elif metric == 'mahalanobis':
-            raise NotImplementedError("Still not implemented. Try another metric.")
+            raise ModuleNotFoundError("Still not implemented. Try another metric.")
         elif metric == 'seuclidean':
-            raise NotImplementedError("Still not implemented. Try another metric.")
+            raise ModuleNotFoundError("Still not implemented. Try another metric.")
         else:
             self.model = DBSCAN(min_samples=self.min_samples, eps=self.eps, metric=self.metric, n_jobs=n_jobs)
 
