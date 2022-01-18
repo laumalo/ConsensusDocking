@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 from sklearn.cluster import OPTICS
 
@@ -98,7 +99,7 @@ class ClusteringOPTICS:
         Get cluster labels after fitting the model.
         Returns
         -------
-        List with the labels of the cluster. Cluster -1 contains the outliers.
+        Numpy array with the labels of the cluster. Cluster -1 contains the outliers.
         """
         self.labels = self.model.labels_
         return self.labels
