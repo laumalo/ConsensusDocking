@@ -29,10 +29,12 @@ class ClusteringKMeans:
         self.data_weight = data_weight
         self.n_clusters = n_clusters
         self.max_iter = max_iter
+        self.n_init = n_init
         self.labels = None
         self.centroids = None
+        self.initial_clusters = initial_clusters
 
-        self.model = KMeans(n_clusters=self.n_clusters, init=initial_clusters, max_iter=max_iter, n_init=n_init)
+        self.model = KMeans(n_clusters=self.n_clusters, init=self.initial_clusters, max_iter=max_iter, n_init=n_init)
 
     def fit(self):
         """
@@ -74,3 +76,15 @@ class ClusteringKMeans:
         centroids_coord = self.model.cluster_centers_
         self.centroids, _ = pairwise_distances_argmin_min(centroids_coord, self.data.values)
         return self.centroids
+
+    def print_info(self):
+        """
+        Reports the parameters used for the clustering.
+        """
+        print("\n#################")
+        print("Running KMeans Algorithm with parameters:")
+        print(f"  - n_custers \t\t {self.n_clusters}")
+        print(f"  - n_init \t\t {self.n_init}")
+        print(f"  - max_iter \t\t {self.max_iter}")
+        print(f"  - initial_cluster \t {self.initial_clusters}")
+        print("#################\n")
