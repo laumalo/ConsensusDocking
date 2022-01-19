@@ -28,11 +28,10 @@ class ClusteringKMeans:
         self.data = df
         self.data_weight = data_weight
         self.n_clusters = n_clusters
-        self.max_iter = max_iter
         self.labels = None
         self.centroids = None
 
-        self.model = KMeans(n_clusters=self.n_clusters, init=initial_clusters, n_init=n_init)
+        self.model = KMeans(n_clusters=self.n_clusters, init=initial_clusters, max_iter=max_iter, n_init=n_init)
 
     def fit(self):
         """
