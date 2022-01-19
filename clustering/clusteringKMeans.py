@@ -28,6 +28,7 @@ class ClusteringKMeans:
         self.data = df
         self.data_weight = data_weight
         self.n_clusters = n_clusters
+        self.max_iter = max_iter
         self.labels = None
         self.centroids = None
 
@@ -46,7 +47,7 @@ class ClusteringKMeans:
         else:
             self.model.fit(self.data.values, sample_weight=self.data_weight.values)
         if self.model.n_iter_ < self.max_iter:
-            print("KMeans converged")
+            print("KMeans converged!")
         else:
             print("Warning: KMeans did not converge!!")
 
