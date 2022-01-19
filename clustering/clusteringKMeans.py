@@ -3,7 +3,7 @@ from sklearn.cluster import KMeans
 
 
 class ClusteringKMeans:
-    def __init__(self, df, n_clusters=8, initial_clusters='k-means++', max_iter=300, data_weight=None):
+    def __init__(self, df, n_clusters=8, initial_clusters='k-means++', max_iter=300, n_init=10, data_weight=None):
         """
         It initializes a ClusteringKMeans object.
         Parameters
@@ -19,6 +19,9 @@ class ClusteringKMeans:
             If an array is passed, it should be of shape (n_clusters, n_features) and gives the initial centers.
         max_iter : int
             Maximum number of iterations of the k-means algorithm for a single run.
+        n_init : int
+            Number of time the k-means algorithm will be run with different centroid seeds. The final results will be
+            the best output of n_init consecutive runs in terms of inertia.
         data_weight : array-like of shape (n_samples,), default=None
             The weights for each observation in df. If None, all observations are assigned equal weight.
         """
@@ -29,7 +32,7 @@ class ClusteringKMeans:
         self.labels = None
         self.centroids = None
 
-        self.model = KMeans(n_clusters=self.n_clusters, init=initial_clusters)
+        self.model = KMeans(n_clusters=self.n_clusters, init=initial_clusters, n_init=n_init)
 
     def fit(self):
         """
