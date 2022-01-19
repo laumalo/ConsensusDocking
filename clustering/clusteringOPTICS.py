@@ -46,6 +46,7 @@ class ClusteringOPTICS:
         self.metric = metric.lower()
         self.min_samples = min_samples
         self.labels = None
+        self.centroids = None
 
         self.__validate_input()
 
@@ -59,7 +60,8 @@ class ClusteringOPTICS:
         elif metric == 'seuclidean':
             raise ModuleNotFoundError("Still not implemented. Try another metric.")
         else:
-            self.model = OPTICS(min_samples=self.min_samples, xi=self.xi, eps=self.eps, metric=self.metric, n_jobs=n_jobs)
+            self.model = OPTICS(min_samples=self.min_samples, xi=self.xi, eps=self.eps, metric=self.metric,
+                                n_jobs=n_jobs)
 
     def __validate_input(self):
         """
@@ -89,7 +91,7 @@ class ClusteringOPTICS:
         Fits the model with self.data and, The fitted model is returned and saved in self.model.
         Returns
         -------
-        OPTICS scklearn object model fitted.
+        OPTICS sklearn object model fitted.
         """
         self.model.fit(self.data.values)
         return self.model
@@ -103,3 +105,13 @@ class ClusteringOPTICS:
         """
         self.labels = self.model.labels_
         return self.labels
+
+    def get_centroids(self):
+        """
+        It prints that OPTICS cannot find centroids. Method added to be coherent with clusteringKMeans.
+        Returns
+        -------
+        returns self.centroids which is None
+        """
+        print("OPTICS cannot find clusters' centroids.")
+        return self.centroids

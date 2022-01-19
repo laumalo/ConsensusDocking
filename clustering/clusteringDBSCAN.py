@@ -45,6 +45,7 @@ class ClusteringDBSCAN:
         self.min_samples = min_samples
         self.data_weight = data_weight
         self.labels = None
+        self.centroids = None
 
         self.__validate_input()
 
@@ -88,7 +89,7 @@ class ClusteringDBSCAN:
         is returned and saved in self.model.
         Returns
         -------
-        DBSCAN scklearn object model fitted.
+        DBSCAN sklearn object model fitted.
         """
         if self.data_weight is None:
             self.model.fit(self.data.values)
@@ -105,3 +106,13 @@ class ClusteringDBSCAN:
         """
         self.labels = self.model.labels_
         return self.labels
+
+    def get_centroids(self):
+        """
+        It prints that DBSCAN cannot find centroids. Method added to be coherent with clusteringKMeans.
+        Returns
+        -------
+        returns self.centroids which is None
+        """
+        print("DBSCAN cannot find clusters' centroids.")
+        return self.centroids
