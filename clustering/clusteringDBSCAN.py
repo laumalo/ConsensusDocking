@@ -82,6 +82,9 @@ class ClusteringDBSCAN:
                 print(
                     "WARNING: There are poses that weight equal or more than min_samples, so a single pose can create"
                     " a cluster!")
+        assert type(self.eps) == int, f"eps parameter must be and int value but found: {type(self.eps)}. " \
+                                      f"Eps sets the maximum distance between two samples for them to be considered " \
+                                      f"as in the same neighborhood."
 
     def fit(self):
         """
