@@ -211,8 +211,9 @@ class Clustering:
             cluster_index_dict[cluster].append(i)
         # self.cluster_index_dict = cluster_index_dict
         if save_dict_to_yaml:
-            self.__write_yaml(cluster_index_dict, 'cluster_index_dict.yaml', yaml_path)
-            print(f"Saved cluster index dict to {os.path.join(yaml_path, 'cluster_index_dict.yaml')}")
+            filename = f'{self.clustering_method}_cluster_index_dict.yaml'
+            self.__write_yaml(cluster_index_dict, filename, yaml_path)
+            print(f"Saved cluster index dict to {os.path.join(yaml_path, filename)}")
         return cluster_index_dict
 
     def get_cluster_poses(self, save_poses_dict_to_yaml=True, save_index_dict_to_yaml=False, yaml_path='.'):
@@ -242,8 +243,9 @@ class Clustering:
             poses = self.__get_ids_by_index(index_list)
             cluster_pose_dict[int(cluster)] = poses
         if save_poses_dict_to_yaml:
-            self.__write_yaml(cluster_pose_dict, 'cluster_poses_dict.yaml', yaml_path)
-            print(f"Saved cluster poses dict to {os.path.join(yaml_path, 'cluster_poses_dict.yaml')}")
+            filename = f'{self.clustering_method}_cluster_poses_dict.yaml'
+            self.__write_yaml(cluster_pose_dict, filename, yaml_path)
+            print(f"Saved cluster poses dict to {os.path.join(yaml_path, filename)}")
         return cluster_pose_dict
 
     def get_centroids_poses(self, save_centroid_poses_to_yaml=True, save_centroid_index_to_yaml=False, yaml_path='.'):
@@ -275,13 +277,14 @@ class Clustering:
                 centroid_pose_dict[int(cluster)] = pose[0]
                 centroid_index_dict[int(cluster)] = int(index)
         if save_centroid_poses_to_yaml:
-            self.__write_yaml(centroid_pose_dict, 'centroid_poses_dict.yaml', yaml_path)
-            print(f"Saved cluster poses dict to {os.path.join(yaml_path, 'cluster_poses_dict.yaml')}")
+            filename = f'{self.clustering_method}_centroid_poses_dict.yaml'
+            self.__write_yaml(centroid_pose_dict, filename, yaml_path)
+            print(f"Saved cluster poses dict to {os.path.join(yaml_path, filename)}")
         if save_centroid_index_to_yaml:
-            self.__write_yaml(centroid_index_dict, 'centroid_index_dict.yaml', yaml_path)
-            print(f"Saved cluster poses dict to {os.path.join(yaml_path, 'centroid_index_dict.yaml')}")
+            filename = f'{self.clustering_method}_centroid_index_dict.yaml'
+            self.__write_yaml(centroid_index_dict, filename, yaml_path)
+            print(f"Saved cluster poses dict to {os.path.join(yaml_path, filename)}")
         return centroid_pose_dict
-
 
     @staticmethod
     def __write_yaml(dictionary, filename, save_path='.'):
@@ -331,5 +334,3 @@ class Clustering:
         elif save_index_dict:
             self.get_centroids_poses(save_centroid_poses_to_yaml=False, save_centroid_index_to_yaml=True,
                                      yaml_path=save_path)
-
-
