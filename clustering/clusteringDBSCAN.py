@@ -100,7 +100,12 @@ class ClusteringDBSCAN:
         if self.data_weight is None:
             self.model.fit(self.data.values)
         else:
-            self.model.fit(self.data.values, sample_weight=self.data_weight.values)
+            if type(self.data_weight) is np.ndarray:
+                self.model.fit(self.data.values, sample_weight=self.data_weight)
+            elif type(self.data_weight) is pd.core.frame.DataFrame:
+                self.model.fit(self.data.values, sample_weight=self.data_weight.values)
+
+
         return self.model
 
     def get_labels(self):

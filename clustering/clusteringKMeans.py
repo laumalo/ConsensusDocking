@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 from sklearn.cluster import KMeans
 
@@ -47,7 +48,10 @@ class ClusteringKMeans:
         if self.data_weight is None:
             self.model.fit(self.data.values)
         else:
-            self.model.fit(self.data.values, sample_weight=self.data_weight.values)
+            if type(self.data_weight) is np.ndarray:
+                self.model.fit(self.data.values, sample_weight=self.data_weight)
+            elif type(self.data_weight) is pd.core.frame.DataFrame:
+                self.model.fit(self.data.values, sample_weight=self.data_weight.values)
         if self.model.n_iter_ < self.max_iter:
             print("KMeans converged!")
         else:
