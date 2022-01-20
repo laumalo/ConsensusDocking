@@ -102,26 +102,63 @@ def init_clustering(encoding_file_path, clustering_method, metric, eps, xi, metr
 
     Parameters
     ----------
-    encoding_file_path
-    clustering_method
-    metric
-    eps
-    xi
-    metric_param
-    min_samples
-    use_coord
-    use_norm_sc
-    data_sel_list
-    data_weight
-    n_jobs
-    n_clusters
-    initial_clusters
-    max_iter
-    n_init
+    encoding_file_path : str
+        Path to encoding file. This file must contain the data that wants to be used for the clustering.
+    clustering_method : str
+        Clustering method that you want to use for the clustering.
+    metric : str
+        Metric used to compute distances between clusters for DBSCAN and OPTICS algorithms.
+    eps : float
+        The maximum distance between two samples for them to be considered as in the same neighborhood. Used only
+        when using DBSCAN.
+    xi : float
+        Determines the minimum steepness on the reachability plot that constitutes a cluster boundary. For example,
+        an upwards point in the reachability plot is defined by the ratio from one point to its successor being at
+        most 1-xi. Used only when using OPTICS.
+    metric_param : array_like for mahalanobis/ int for minkowski / 1D array_like for seuclidean / otherwise None
+        Extra parameter needed for some metrics.
+        Mahalanobis:
+            The inverse of the covariance matrix.
+        Minkowski:
+            When p = 1, this is equivalent to using manhattan_distance (l1), and euclidean_distance (l2) for p = 2.
+        Seuclidean:
+            1-D array of component variances. It is usually computed among a larger collection vectors.
+    min_samples : int
+        The number of samples (or total weight) in a neighborhood for a point to be considered as a core point.
+        This includes the point itself.
+    use_coord : bool
+        If True, it will select the 9 coordinates in the encoding file to do the clustering. If False, you must
+        specify which columns do you want to use in the data_sel_list parameter. Notice that if data_sel_list is
+        specified, the data_sel_list columns will have priority (so use_coord will be ignored)
+    use_norm_sc : bool
+        If False, it won't use the norm_score date in the encoding file to cluster. If True, it will select the
+        norm_score info in the encoding file to cluster the data, however you must also set use_coord=True,
+        otherwise you will obtain a ValueError (since we consider that only using the norm_score is not enough to
+        make a good clustering).
+    data_sel_list : list of str
+        List containing the names of the columns that we want to select from the encoding file to make the
+        clustering. Note that, when specifying this parameter, it will be used regardless the use_coord and
+        use_norm_sc parameters.
+    data_weight : np.ndarray
+        Weight of each sample to be used in the clustering
+    n_jobs : int
+        Number of parallel jobs to run. None means 1. -1 means using all processors. Only used for DBSCAN and OPTICS
+    n_clusters : int
+        The number of clusters to form as well as the number of centroids to generate with KMeans algorithm.
+    initial_clusters : str
+        Only used with KMeans algorithm.
+            ‘k-means++’ : selects initial cluster centers for k-mean clustering in a smart way to speed up convergence.
+            ‘random’: choose n_clusters observations (rows) at random from data for the initial centroids.
+            If an array is passed, it should be of shape (n_clusters, n_features) and gives the initial centers.
+    max_iter : int
+        Maximum number of iterations of the k-means algorithm for a single run. Only used with KMeans algorithm.
+    n_init : int
+        Number of time the k-means algorithm will be run with different centroid seeds. The final results will be
+        the best output of n_init consecutive runs in terms of inertia. Only used with KMeans algorithm.
 
     Returns
     -------
-
+    Initialized clustering object.
     """
     clustering = Clustering(encoding_file_path, clustering_method, metric, eps, xi, metric_param, min_samples,
                             use_coord, use_norm_sc, data_sel_list, data_weight, n_jobs, n_clusters, initial_clusters,
@@ -132,20 +169,27 @@ def init_clustering(encoding_file_path, clustering_method, metric, eps, xi, metr
 def run_clustering(clustering, save_path, save_cluster_index, save_centroid_index, save_centroid_poses,
                    save_cluster_poses=True):
     """
-
+    It runs the clustering given a initialized clustering object and returns the same object fitted. When specified, it
+    also can save dicts of index/poses ids of each poses for each cluster and dicts of index/poses ids of the centroids
+    for each cluster in yaml files.
     Parameters
     ----------
     clustering : Clustering object
-
-    save_path
-    save_cluster_index
-    save_cluster_poses
-    save_centroid_poses
-    save_centroid_index
+        Initialized clustering object.
+    save_path : str
+        Path to folder where the yaml files will be saved when specified.
+    save_cluster_index : bool
+        If True, it saves a dict of the poses index that belong to each cluster.
+    save_centroid_index : bool
+        If True, it saves a yaml file of the pose index of each cluster centroid.
+    save_centroid_poses : bool
+        If True, it saves a yaml file of the poses ids of each cluster centroid.
+    save_cluster_poses : bool
+        If True, it saves a dict of the poses ids that belong to each cluster.
 
     Returns
     -------
-
+    Clustering object fitted.
     """
     clustering.run(save_index_dict=save_cluster_index, save_poses_dict=save_cluster_poses,
                    save_centroid_poses=save_centroid_poses, save_centroid_index=save_centroid_index,
