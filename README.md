@@ -29,4 +29,11 @@
    - OPTICS seleccionant coords i sc, amb xi 0.2, metric minkowski amb extra parameter 1, poblacio minima de 2, 
      utilizant 2 jobs
     
-     ` python cluster_encoding_file.py optics ../../encodings/test.csv -m minkowski -mp 1 -xi 0.2 -min-sam 2 -cs -nj 2`
+     ```python cluster_encoding_file.py optics ../../encodings/test.csv -m minkowski -mp 1 -xi 0.2 -min-sam 2 -cs -nj 2```
+    
+> Nota: Per carregar els yaml files com a diccionaris a python cal correr:
+>```
+>import yaml
+>with open('clust_poses_dict.yaml') as f:
+>    d = yaml.full_load(f)
+>```
