@@ -42,8 +42,10 @@ class ClusteringDBSCAN:
         self.data = df
         self.eps = eps  # epsilon parameter in DBSCAN algorithm
         self.metric = metric.lower()
+        self.metric_param = metric_param
         self.min_samples = min_samples
         self.data_weight = data_weight
+        self.n_jobs = n_jobs
         self.labels = None
         self.centroids = None
 
@@ -119,3 +121,23 @@ class ClusteringDBSCAN:
         """
         print("DBSCAN cannot find clusters' centroids.")
         return self.centroids
+
+    def print_info(self):
+        """
+        Reports the parameters used for the clustering.
+        """
+        print("\n#################")
+        print("Running DBSCAN Algorithm with parameters:")
+        print(f"  - eps \t\t {self.eps}")
+        print(f"  - metric \t\t {self.metric}")
+        print(f"    - metric_param \t {self.metric_param}")
+        print(f"  - min_samples \t {self.min_samples}")
+        if self.n_jobs is None:
+            print(f"  - n_jobs \t\t 1")
+        else:
+            print(f"  - n_jobs \t\t {self.n_jobs}")
+        if self.data_weight is None:
+            print("  - Weights for each pose were not specified, so they all have the same weight.")
+        else:
+            print("  - Using weights for each pose.")
+        print("#################\n")
