@@ -51,9 +51,9 @@ class Clustering:
             List containing the names of the columns that we want to select from the encoding file to make the
              clustering. Note that, when specifying this parameter, it will be used regardless the use_coord and 
              use_norm_sc parameters. 
-        data_weight : list
-            List of specifying the weight that we want to use for each pose (taking into account the order in the
-             encoding file). Remember scaling min_samples accordingly.
+        data_weight : array-like of shape (n_samples,)
+            Array like object specifying the weight that we want to use for each pose (taking into account the order in
+            the encoding file). Remember scaling min_samples accordingly.
             Note: Ideally this parameter will end up being a bool parameter since the parserEncoding object will be able
              to generate a list of weight of each pose according the program that generate that pose.
         n_jobs : int
