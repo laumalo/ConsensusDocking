@@ -91,4 +91,8 @@ class ClusteringKMeans:
         print(f"  - n_init \t\t {self.n_init}")
         print(f"  - max_iter \t\t {self.max_iter}")
         print(f"  - initial_cluster \t {self.initial_clusters}")
+        if self.data_weight is None:
+            print("  - Weights for each pose were not specified, so they all have the same weight.")
+        else:
+            print("  - Using weights for each pose.")
         print("#################\n")
