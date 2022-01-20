@@ -19,7 +19,7 @@ class Clustering:
         clustering_method : str
             Clustering method that you want to use for the clustering.
         metric : str
-            Metric you want to use to compute distances between clusters.
+            Metric used to compute distances between clusters for DBSCAN and OPTICS algorithms.
         eps : float
             The maximum distance between two samples for them to be considered as in the same neighborhood. Used only 
             when clustering_method='dbscan'.
