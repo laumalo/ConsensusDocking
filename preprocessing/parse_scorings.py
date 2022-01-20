@@ -21,7 +21,7 @@ def parse_args():
     parser.add_argument("score_filename", type=str,
                         help="Name of the score file. If you decided to analyze different programs, make a "
                              "coma-separated list with the score filenames (in the same order!)")
-    parser.add_argument("-w", "--w_dir", type=str,
+    parser.add_argument("-w", "--w-dir", type=str,
                         help='Path to folder containing the folders of each program.', default='.')
     parsed_args = parser.parse_args()
     return parsed_args
