@@ -315,8 +315,10 @@ class Clustering:
             Path to the folder in which we want to save the yaml file (if save_dict_to_yaml=True). Notice that the
             output file will be always have the filename: cluster_poses_dict.yaml.
         """
+        self.model.print_info()
         self.model.fit()
         self.labels = self.model.get_labels()
+        self.__cluster_report()
 
         if save_poses_dict:
             if save_index_dict:
