@@ -44,7 +44,9 @@ class ClusteringOPTICS:
         self.eps = eps  # epsilon parameter in DBSCAN algorithm
         self.xi = xi  # xi parameter in Xi algorithm
         self.metric = metric.lower()
+        self.metric_param = metric_param
         self.min_samples = min_samples
+        self.n_jobs = n_jobs
         self.labels = None
         self.centroids = None
 
@@ -115,3 +117,21 @@ class ClusteringOPTICS:
         """
         print("OPTICS cannot find clusters' centroids.")
         return self.centroids
+
+    def print_info(self):
+        """
+        Reports the parameters used for the clustering.
+        """
+        print("\n#################")
+        print("Running OPTICS Algorithm with parameters:")
+        print(f"  - Cluster method \t\t {self.cluster_method}")
+        print(f"    - xi \t\t {self.xi} (if xi)")
+        print(f"    - eps \t\t {self.eps} (if dbscan)")
+        print(f"  - metric \t\t {self.metric}")
+        print(f"    - metric_param \t {self.metric_param}")
+        print(f"  - min_samples \t {self.min_samples}")
+        if self.n_jobs is None:
+            print(f"  - n_jobs \t\t 1")
+        else:
+            print(f"  - n_jobs \t\t {self.n_jobs}")
+        print("#################\n")
