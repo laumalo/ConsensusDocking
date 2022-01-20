@@ -238,7 +238,7 @@ class Clustering:
         Dict with cluster id as keys and poses ids of each cluster as values.
         """
         cluster_pose_dict = {}
-        cluster_index_dict = self.__get_cluster_index(save_dict_to_yaml=save_index_dict_to_yaml)
+        cluster_index_dict = self.__get_cluster_index(save_dict_to_yaml=save_index_dict_to_yaml, yaml_path=yaml_path)
         for cluster, index_list in cluster_index_dict.items():
             poses = self.__get_ids_by_index(index_list)
             cluster_pose_dict[int(cluster)] = poses
