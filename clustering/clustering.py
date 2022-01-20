@@ -333,6 +333,6 @@ class Clustering:
                 self.get_centroids_poses(save_centroid_index_to_yaml=True, yaml_path=save_path)
             else:
                 self.get_centroids_poses(yaml_path=save_path)
-        elif save_index_dict:
+        elif save_centroid_index:
             self.get_centroids_poses(save_centroid_poses_to_yaml=False, save_centroid_index_to_yaml=True,
                                      yaml_path=save_path)
