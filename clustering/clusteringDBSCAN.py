@@ -52,8 +52,9 @@ class ClusteringDBSCAN:
         self.__validate_input()
 
         if metric == 'minkowski':
-            assert metric_param is not None, "metric_param should be an int value: p = 1, this is equivalent to using" \
-                                             " manhattan_distance (l1), and euclidean_distance (l2) for p = 2."
+            assert type(metric_param) is int, "metric_param should be an int value: p = 1, this is equivalent to using" \
+                                              " manhattan_distance (l1), and euclidean_distance (l2) for p = 2."
+
             self.model = DBSCAN(min_samples=self.min_samples, eps=self.eps, metric=self.metric, p=metric_param,
                                 n_jobs=n_jobs)
         elif metric == 'mahalanobis':
