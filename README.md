@@ -30,22 +30,26 @@ from consensus_docking.preprocessing import Parser
      diferents, utilizant el valor default de output_dir ('./') per guardar yamls (ids de les poses a cada cluster 
      (defecte) + els ids de les poses del centroide (-scp)):
       
-      ```python cluster_encoding_file.py python cluster_encoding_file.py kmeans ../../encodings/test.csv -sel-col x1,x2```
-      ``` -nc 2 -max-iter 400 -n-init 15 -scp```
+      ```
+     python cluster_encoding_file.py python cluster_encoding_file.py kmeans ../../encodings/test.csv -sel-col x1,x2  -nc 2 -max-iter 400 -n-init 15 -scp
+     ```
    - DBSCAN seleccionant coords de l'encoding, posant weights (tants com poses a l'encoding), amb epsilon 10, metric
      euclidean (default), guardant els ids de les poses de cada cluster (default) i els index (-scli). L'output dir es 
      la carpeta previa (../) des d'on s'executa:
     
-     ```python cluster_encoding_file.py dbscan ../../encodings/test.csv -c -eps 10 -scli -o ../ -dw 1,1,1,1,1,1,2,1,2```
-`
-    
+     ```
+     python cluster_encoding_file.py dbscan ../../encodings/test.csv -c -eps 10 -scli -o ../ -dw 1,1,1,1,1,1,2,1,2
+     ```
+
    - OPTICS seleccionant coords i sc, amb xi 0.2, metric minkowski amb extra parameter 1, poblacio minima de 2, 
-     utilizant 2 jobs
+       utilizant 2 jobs
     
-     ```python cluster_encoding_file.py optics ../../encodings/test.csv -m minkowski -mp 1 -xi 0.2 -min-sam 2 -cs -nj 2```
+       ``` 
+       python cluster_encoding_file.py optics ../../encodings/test.csv -m minkowski -mp 1 -xi 0.2 -min-sam 2 -cs -nj 2
+       ```
     
 > Nota: Per carregar els yaml files com a diccionaris a python cal correr:
->```
+>```python
 >import yaml
 >with open('clust_poses_dict.yaml') as f:
 >    d = yaml.full_load(f)
