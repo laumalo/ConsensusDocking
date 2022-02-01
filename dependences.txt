@@ -4,6 +4,7 @@ Dependences list:
 - biopandas
 - numpy
 - pandas
+- biopandas
 - pyyaml
 - sklearn
 - scipy
