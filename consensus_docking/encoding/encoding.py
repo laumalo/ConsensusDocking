@@ -108,7 +108,7 @@ class Encoder(object):
             print(e)
             pass
 
-    def run_encoding(self, output, n_proc=1):
+    def run_encoding(self, output, norm_score_file=None, n_proc=1):
         """
 
         """
@@ -142,8 +142,17 @@ class Encoder(object):
         df_result = pd.DataFrame(result.astype(str),
                                  columns=['ids', 'norm_score', 'x1', 'y1', 'z1', 'x2', 'y2', 'z2', 'x3', 'y3', 'z3'])
 
-        try:
-            df_score = pd.read_csv(os.path.join(self.working_dir, self.docking_program, 'norm_score.csv'))
+        if norm_score_file is None or not os.path.exists(norm_score_file):
+            if norm_score_file is None:
+                print(f'WARNING: norm_score path was NOT specified, so energies won\'t be added to {output}')
+            elif not os.path.exists(norm_score_file):
+                print(f'WARNING: {norm_score_file} was NOT FOUND, so energies won\'t be added to {output}')
+            for i, row in df_result.iterrows():
+                encoding_id = file_names[i]
+                df_result.at[i, 'ids'] = encoding_id
+
+        elif norm_score_file is not None:
+            df_score = pd.read_csv(norm_score_file)
             score_ids = df_score.ids.to_list()
             for i, row in df_result.iterrows():
                 encoding_id = file_names[i]
@@ -152,13 +161,6 @@ class Encoder(object):
                     df_result.at[i, 'norm_score'] = float(df_score[df_score.ids == encoding_id].norm_score)
                 else:
                     print(f'WARNING: No ids from norm_score coincided with file: {file_names[i]}. Setting 0 value')
-            print('WARNING: If you haven\'t changed the file names of your files, norm_score column will be set to 0.')
-
-        except FileNotFoundError:
-            print(
-                f'WARNING: norm_score.csv hasn\'t been found in {os.path.join(self.working_dir, self.docking_program)}'
-                f', so energies won\'t be added to {output}.')
-            for i, row in df_result.iterrows():
-                encoding_id = file_names[i]
-                df_result.at[i, 'ids'] = encoding_id
+            print('WARNING: If you haven\'t changed the file names of your PDBs to `program_num.pdb`, norm_score '
+                  'column will be set to 0.')
         df_result.to_csv(output, index=False)
