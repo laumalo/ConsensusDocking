@@ -5,7 +5,6 @@ import os
 import numpy as np
 import pandas as pd
 import scipy.spatial as spatial
-from Bio.PDB import *
 from biopandas.pdb import PandasPdb
 import linecache
 
@@ -94,7 +93,7 @@ class Encoder(object):
 
     def encode_file(self, file_name, atom_lines):
         try:
-            l = count = 0
+            #l = count = 0
             df = pd.DataFrame(columns=('x', 'y', 'z'))
             for q,l in enumerate(atom_lines):
                 line = linecache.getline(file_name[1], l+1)      
