@@ -22,8 +22,12 @@ from consensus_docking.preprocessing import Parser
    
    - ```python parse_scorings.py ftdock,zdock,lightdock,piper absp.ene,absp.ene,gso_100.out,ft.000.00 -w ../../```
    - ```python parse_scorings.py ftdock absp.ene -w ../../```
-   
-3. El script clustering/cluster_encoding_file.py esta llest per DBSCAN, OPTICS KMeans, donat un fitxer d'encoding. 
+3. Per corre l'encoding:
+
+    - ```python encode_structures.py zdock_A --w-dir ../```
+    - ```python encode_structures.py ftdock_A,zdock_B --w-dir ../ --not-score -c 4```
+
+4. El script clustering/cluster_encoding_file.py esta llest per DBSCAN, OPTICS KMeans, donat un fitxer d'encoding. 
    Alguns exemples de com utilizar-lo (cal posar la llibreria pyyaml a l'env!!):
     
    - KMeans seleccionant columnes x1,x2 amb 2 clusters fent com a molt 400 iteracions i buscant 15 centroides (-n-init) 
@@ -54,3 +58,4 @@ from consensus_docking.preprocessing import Parser
 >with open('clust_poses_dict.yaml') as f:
 >    d = yaml.full_load(f)
 >```
+
