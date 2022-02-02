@@ -49,8 +49,8 @@ class Encoder(object):
                 raise ValueError("bad ndarray dimensions combination")
             return np.linalg.norm(ndarray_0 - ndarray_1, axis=1)
 
-        N = data.shape[0]
-        ND = data.shape[1]
+        # N = data.shape[0]
+        # ND = data.shape[1]
         indices = np.argsort(distances(data, data.mean(0)))[:K].copy()
         distsums = spatial.distance.cdist(data, data[indices]).sum(1)
         distsums[indices] = -np.inf
@@ -96,14 +96,14 @@ class Encoder(object):
 
     def encode_file(self, file_name, atom_lines):
         try:
-            #l = count = 0
+            # l = count = 0
             df = pd.DataFrame(columns=('x', 'y', 'z'))
             for q, l in enumerate(atom_lines):
                 line = linecache.getline(file_name[1], l + 1)
                 df.loc[q] = [line[30:38], line[38:46], line[46:54]]
             array[file_name[0], 2:] = df.values.flatten()
             linecache.clearcache()
-            #print(array[file_name[0], :])
+            # print(array[file_name[0], :])
         except Exception as e:
             print(e)
             pass
@@ -118,7 +118,7 @@ class Encoder(object):
             globals()['array'] = np.frombuffer(array, dtype='float').reshape(len(file_paths), 11)
 
         # Initialize array 
-        file_paths = [f'{os.path.join(self.working_dir, self.docking_program,f)}'
+        file_paths = [f'{os.path.join(self.working_dir, self.docking_program, f)}'
                       for f in os.listdir(os.path.join(self.working_dir, self.docking_program))
                       if f.endswith(".pdb")]
         file_names = [f'{os.path.splitext(f)[0]}'
@@ -155,8 +155,9 @@ class Encoder(object):
             print('WARNING: If you haven\'t changed the file names of your files, norm_score column will be set to 0.')
 
         except FileNotFoundError:
-            print(f'WARNING: norm_score.csv hasn\'t been found in {os.path.join(self.working_dir, self.docking_program)}'
-                  f', so energies won\'t be added to {output}.')
+            print(
+                f'WARNING: norm_score.csv hasn\'t been found in {os.path.join(self.working_dir, self.docking_program)}'
+                f', so energies won\'t be added to {output}.')
             for i, row in df_result.iterrows():
                 encoding_id = file_names[i]
                 df_result.at[i, 'ids'] = encoding_id
