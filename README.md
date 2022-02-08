@@ -5,7 +5,7 @@
 Just run the following command:
 
 ```python
-python setup.py develop
+python setup.py
  ```
 
 Then you can import the different packages as follows:
