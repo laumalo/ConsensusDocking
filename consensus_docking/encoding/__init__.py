@@ -1,2 +1,2 @@
 # __init__.py
-from .encoding import Encoder
+from .encode import Encoder

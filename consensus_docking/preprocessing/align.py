@@ -1,14 +1,15 @@
 """
-This module containts all the methods related with the aligment of PDB structures.
+This module containts all the methods related with the aligment of 
+PDB structures.
 """
 from biopandas.pdb import PandasPdb
 import numpy as np
 import scipy.spatial as spatial
 import torch 
 
-class Aligner(object): 
+class Aligner_3points(object): 
     """
-    Aligner object.
+    Aligner object based on the 3 CA method.
     """
     def __init__(self, pdb_ref, chain_ref): 
         """
@@ -23,7 +24,8 @@ class Aligner(object):
         """
         self.pdb_ref = pdb_ref
         self.chain_ref = chain_ref
-        self.atoms_to_align_ref = self.get_3points_lines(self.pdb_ref, self.chain_ref)
+        self.atoms_to_align_ref = \
+            self.get_3points_lines(self.pdb_ref, self.chain_ref)
 
 
     def get_most_dist_points(self, data, K, MAX_LOOPS=20):
@@ -97,7 +99,8 @@ class Aligner(object):
             DataFrame with the 3 CA selected.
         """
         ppdb = PandasPdb().read_pdb(pdb)
-        df = ppdb.df['ATOM'][ppdb.df['ATOM']['atom_name'] == 'CA'][ppdb.df['ATOM']['chain_id'] == chain]
+        df = ppdb.df['ATOM'][ppdb.df['ATOM']['atom_name'] == 'CA']\
+             [ppdb.df['ATOM']['chain_id'] == chain]
         coords = df[['x_coord', 'y_coord', 'z_coord']].values
         dist_atoms = self.get_most_dist_points(coords, K=3)
         return df.iloc[dist_atoms]
@@ -105,8 +108,9 @@ class Aligner(object):
 
     def find_rigid_alignment(self, A, B):
         """
-        It computes the rotation and translation matrix given to sets of 3D points. 
-        At least each set has to containt 3 proints. Implementation based on the Kabash algorithm. 
+        It computes the rotation and translation matrix given to sets of 3D 
+        points. At least each set has to containt 3 proints. Implementation 
+        based on the Kabash algorithm. 
 
         Parameters
         ----------
@@ -144,8 +148,8 @@ class Aligner(object):
 
     def align(self, pdb_query, chain_query): 
         """
-        It performs a rigid aligment of the query chain against the reference structure.
-        This method is useful to align the static protein. 
+        It performs a rigid aligment of the query chain against the reference 
+        structure. This method is useful to align the static protein. 
 
 
         Parameters
@@ -179,7 +183,8 @@ class Aligner(object):
             coords = df[['x_coord', 'y_coord', 'z_coord']].values
             new_coords = np.array([np.dot(R,coord)  + t for coord in coords])
 
-            for i, (value, new_value) in enumerate(zip(df[['x_coord', 'y_coord', 'z_coord']].values, new_coords)): 
+            for i, (value, new_value) in enumerate(
+                zip(df[['x_coord', 'y_coord', 'z_coord']].values, new_coords)): 
                 df.at[i, 'x_coord'] = new_value[0]
                 df.at[i, 'y_coord'] = new_value[1]
                 df.at[i, 'z_coord'] = new_value[2]
@@ -188,7 +193,66 @@ class Aligner(object):
             ppdb.to_pdb(pdb_query.replace('.pdb', '_aligned.pdb'))
 
         def run_aligment(path, chain, n_proc = 1): 
-            files = [os.path.join(path,file) for file in os.listdir(path) if file.endswith('.pdb')]
+            files = [os.path.join(path,file) for file in os.listdir(path) 
+                     if file.endswith('.pdb')]
             align_paral = partial(align, chain = chain)
             with Pool(n_proc) as p:
                 list(p.imap(align_paral, files))
+
+class Aligner(object):
+    """
+    Aligner object based on MdTraj aligment of CA.
+    """
+    def __init__(self, pdb_ref, chain_ref): 
+        """
+        It initialices and Aligner object with the reference structure. 
+
+        Parameters
+        ----------
+        pdb_ref : str
+            Path to the reference PDB. 
+        chain_ref : str     
+            Chain Id of the reference structure. 
+        """
+        self.pdb_ref = pdb_ref
+        self.chain_ref = chain_ref
+
+    def align(query_structure, ref_traj):
+        """
+        It aligns a structure using MdTraj implementation. 
+
+        Parameters
+        ----------
+        query_structure : str
+            Path to the PDB of the structure to align.
+        ref_traj : mdtraj.Trajectory object
+            Reference trajectory. 
+        """
+        
+        # Load reference receptor structure
+        top_ref = ref_traj.topology
+        atoms_to_align_ref = top_ref.select("chainid 0 and name CA")
+        
+        # Iterates over the docking poses generated for this swarm
+        query_traj = md.load(query_structure)
+        top_query = query_traj.topology
+        atoms_to_align_query = top_query.select("chainid 0 and name CA")
+        query_traj.superpose(ref_traj,
+                             atom_indices = atoms_to_align_query,
+                             ref_atom_indices = atoms_to_align_ref)
+        output_path = query_structure.replace('.pdb', '_align.pdb')
+
+        query_traj.save(output_path)
+        os.remove(query_structure)
+
+    def run_aligment(path, n_proc = 1):
+        """
+        It iterates (in parallel) over all the swam folders to aligned the 
+        generated poses to the reference receptor structure. 
+        """
+        files = [os.path.join(path, file) for file in 
+                 os.listdir(path) if file.endswith('.pdb')]
+        ref_traj = md.load(self.pdb_ref)   
+        align_structures_paral = partial(align_structures, ref_traj = ref_traj)
+        with Pool(args.n_proc) as p:
+            list(p.imap(align_structures_paral, files))
