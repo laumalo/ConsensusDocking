@@ -1,7 +1,7 @@
 """
 Parser module
 """
-
+import os
 
 class Parser:
     def __init__(self, program, score_filename, working_dir='.'):
@@ -42,8 +42,8 @@ class Parser:
             from consensus_docking.preprocessing import ParserZDock
             self.parser = ParserZDock(self.working_dir, self.score_filename)
 
-    def run(self):
+    def run(self, output_folder):
         """Parses and normalizes scoring files"""
         self.parser.read()
         self.parser.norm()
-        self.parser.save()
+        self.parser.save(output_folder=output_folder)

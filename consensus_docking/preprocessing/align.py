@@ -186,3 +186,9 @@ class Aligner(object):
             
             # Save aligned structure to PDB.
             ppdb.to_pdb(pdb_query.replace('.pdb', '_aligned.pdb'))
+
+        def run_aligment(path, chain, n_proc = 1): 
+            files = [os.path.join(path,file) for file in os.listdir(path) if file.endswith('.pdb')]
+            align_paral = partial(align, chain = chain)
+            with Pool(n_proc) as p:
+                list(p.imap(align_paral, files))

@@ -23,7 +23,7 @@ def parse_args(args):
     """
     parser = ap.ArgumentParser()
     parser.add_argument("path", type=str,
-                        help="Path to folder.")
+                        help="Path to dockings results folder.")
     parser.add_argument("conf_file", type=str,
                         help="Configuration file.")
     parser.add_argument("-c", "--n_proc", type=int,
@@ -64,7 +64,7 @@ def parse_conf_file(conf_file):
             logging.info('     - {}'.format(block))
     return ordered_blocks, config
 
-def run_preprocessing(params, path, n_proc):
+def run_preprocessing(params, path, output_path, n_proc):
     """
     It runs the preprocessing block. 
 
@@ -77,6 +77,9 @@ def run_preprocessing(params, path, n_proc):
     n_proc : int
         Number of processors. 
     """
+    from consensus_docking.preprocessing import Aligner, Parser
+
+
     AVAILABLE_KEYS = ['reference', 'align', 'parser', 'scoring_files']
     keys = [k for k in params]
     folders = os.listdir(path)
@@ -102,7 +105,6 @@ def run_preprocessing(params, path, n_proc):
                         logging.info('         Aligment of {}:'.format(folder))
                         folder_path = os.path.join(path, folder)
                         
-                        from consensus_docking.preprocessing import Aligner
                         aligner = Aligner(params['reference'], 'B')
                         aligner.run_aligment(folder_path, 'B', n_proc)
 
@@ -113,16 +115,20 @@ def run_preprocessing(params, path, n_proc):
                               'the files.')
             else:
                 logging.info('     Parsing scoring files.')
-                folders_to_parse = zip(list(params['parser'].split(',')), 
-                                       list(params['scoring_files'].split(',')))
+                folders_to_parse = list(params['parser'].split(','))
+                folders_file_to_parse = \
+                    zip(folders_to_parse, 
+                        list(params['scoring_files'].split(',')))
 
                 if not all([f in folders for f in folders_to_parse]):
                     logging.info('Wrong selection of folders to parse' + 
                                  'the scorings.')
                 else: 
-                    for folder in folders_to_parse:
-                        # TO DO: Parsing
-                        continue 
+                    for folder, file in folders_file_to_parse:
+                        # Parsing
+                        parser = Parser(folder, file, path)
+                        parser.run(output_folder = output_path)
+
 
 def run_encoding(params, path, output_path, n_proc):
     """
@@ -185,10 +191,10 @@ def run_encoding(params, path, output_path, n_proc):
                               index=False, encoding='utf-8-sig')
             logging.info('     Encoding saved to {}'.format(merged_csv_output))
 
-def run_clustering(params):  
+def run_clustering(params, path, output_path, n_pro):  
     pass 
 
-def run_analysis(params): 
+def run_analysis(params, path, output_path, n_pro): 
     pass 
 
 
@@ -230,26 +236,36 @@ def main(args):
     args : argparse.Namespace
         It contains the command-line arguments that are supplied by the user
     """
-    # Handle outputs
-    preprocessing_output, encodings_output, clustering_output, \
-        analysis_output = outputs_handler(args.path)
-
-    # Parse configuration file
-    blocks, params = parse_conf_file(args.conf_file)
     
-    # Run the diferent blocks of the workflow
-    for block in blocks:
-        if block == 'preprocessing': 
-            run_preprocessing(params[block], args.path,
-                              preprocessing_output, args.n_proc)
-        if block == 'encoding': 
-            run_encoding(params[block], args.path,
-                         encodings_output, args.n_proc)
-        if block = 'clustering.step1' or block == 'clustering.step2': 
-            run_clustering(params[block], args.path,
-                           clustering_output, args.n_proc)
-        if block == 'analysis': 
-            run_analysis(params[block], args.path,
+    # Check docking conformations
+    AVAILABLE_PROGRAMS = ['ftdock', 'zdock', 'lightdock', 'frodock',
+                          'patchdock', 'piper', 'rosetta']
+    programs = os.listdir(args.path)
+    checker = all([program in AVAILABLE_PROGRAMS for program in programs])
+    if not checker:
+        logging.error('Wrong docking program.')
+    
+    else:
+        # Handle outputs
+        preprocessing_output, encodings_output, clustering_output, \
+            analysis_output = outputs_handler(args.path)
+
+        # Parse configuration file
+        blocks, params = parse_conf_file(args.conf_file)
+        
+        # Run the diferent blocks of the workflow
+        for block in blocks:
+            if block == 'preprocessing': 
+                run_preprocessing(params[block], args.path,
+                                  preprocessing_output, args.n_proc)
+            if block == 'encoding': 
+                run_encoding(params[block], args.path,
+                             encodings_output, args.n_proc)
+            if block = 'clustering.step1' or block == 'clustering.step2': 
+                run_clustering(params[block], args.path,
+                               clustering_output, args.n_proc)
+            if block == 'analysis': 
+                run_analysis(params[block], args.path,
                          analysis_output, args.n_proc)
 
 
