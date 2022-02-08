@@ -5,15 +5,15 @@ import os
 import numpy as np
 import pandas as pd
 import scipy.spatial as spatial
+from Bio.PDB import *
 from biopandas.pdb import PandasPdb
 import linecache
 
 
-class Encoder(object):
-    def __init__(self, docking_program, chain, working_dir='.'):
-        self.docking_program = docking_program.lower()
+class Encoder(object): 
+    def __init__(self, docking_program, chain): 
+        self.docking_program = docking_program
         self.chain = chain
-        self.working_dir = working_dir
 
     def get_most_dist_points(self, data, K, MAX_LOOPS=20):
         """
@@ -33,7 +33,6 @@ class Encoder(object):
         indices : np.array
             Indices of the K most distance points.
         """
-
         def distances(ndarray_0, ndarray_1):
             """
             It computes the distance between two arrays of coordinates. 
@@ -48,9 +47,9 @@ class Encoder(object):
             if (ndarray_0.ndim, ndarray_1.ndim) not in ((1, 2), (2, 1)):
                 raise ValueError("bad ndarray dimensions combination")
             return np.linalg.norm(ndarray_0 - ndarray_1, axis=1)
-
-        # N = data.shape[0]
-        # ND = data.shape[1]
+        
+        N = data.shape[0]
+        ND = data.shape[1]
         indices = np.argsort(distances(data, data.mean(0)))[:K].copy()
         distsums = spatial.distance.cdist(data, data[indices]).sum(1)
         distsums[indices] = -np.inf
@@ -87,8 +86,7 @@ class Encoder(object):
         df : pandas.dataframe
             DataFrame with the 3 CA selected.
         """
-        pdb_path = os.path.join(self.working_dir, self.docking_program, pdb)
-        ppdb = PandasPdb().read_pdb(pdb_path)
+        ppdb = PandasPdb().read_pdb(pdb)
         df = ppdb.df['ATOM'][ppdb.df['ATOM']['atom_name'] == 'CA'][ppdb.df['ATOM']['chain_id'] == chain]
         coords = df[['x_coord', 'y_coord', 'z_coord']].values
         dist_atoms = self.get_most_dist_points(coords, K=3)
@@ -96,71 +94,54 @@ class Encoder(object):
 
     def encode_file(self, file_name, atom_lines):
         try:
-            # l = count = 0
+            l = count = 0
             df = pd.DataFrame(columns=('x', 'y', 'z'))
-            for q, l in enumerate(atom_lines):
-                line = linecache.getline(file_name[1], l + 1)
+            for q,l in enumerate(atom_lines):
+                line = linecache.getline(file_name[1], l+1)      
                 df.loc[q] = [line[30:38], line[38:46], line[46:54]]
-            array[file_name[0], 2:] = df.values.flatten()
+            array[file_name[0],2:] = df.values.flatten()
             linecache.clearcache()
-            # print(array[file_name[0], :])
+            print(array[file_name[0],:])
         except Exception as e:
-            print(e)
+            print(e) 
             pass
 
-    def run_encoding(self, output, norm_score_file=None, n_proc=1):
+    def run_encoding(self, output, n_proc = 1):
         """
 
         """
         global array
-
         def init_arr(array):
-            globals()['array'] = np.frombuffer(array, dtype='float').reshape(len(file_paths), 11)
+            globals()['array'] = \
+                np.frombuffer(array, dtype='float').reshape(len(file_names), 11)
 
         # Initialize array 
-        file_paths = [f'{os.path.join(self.working_dir, self.docking_program, f)}'
-                      for f in os.listdir(os.path.join(self.working_dir, self.docking_program))
-                      if f.endswith(".pdb")]
-        file_names = [f'{os.path.splitext(f)[0]}'
-                      for f in os.listdir(os.path.join(self.working_dir, self.docking_program))
+        file_names = [f'{self.docking_program}/' + f 
+                      for f in os.listdir(f'{self.docking_program}/') 
                       if f.endswith(".pdb")]
 
-        array = Array('d', np.zeros((len(file_paths) * 11)), lock=False)
+        array = Array('d', np.zeros((len(file_names) *  11)), lock = False)
 
         # Get reference for points
-        i, j, k = self.get_3points_lines(file_paths[0], self.chain)['line_idx'].values
+        i,j,k = \
+            self.get_3points_lines(file_names[0], self.chain)['line_idx'].values
 
-        # Encoding
+
+        # Encoding 
         encode_file_paral = partial(self.encode_file,
-                                    atom_lines=[i, j, k])
+                                    atom_lines = [i,j,k])
 
+                 
         Pool(n_proc, initializer=init_arr, initargs=(array,)).map(
-            encode_file_paral, enumerate(file_paths))
-
+            encode_file_paral, enumerate(file_names))
+        
         # Write out results
-        result = np.frombuffer(array, dtype=float).reshape(len(file_paths), 11)
+        result = np.frombuffer(array, dtype=float).reshape(len(file_names), 11)
         df_result = pd.DataFrame(result.astype(str),
-                                 columns=['ids', 'norm_score', 'x1', 'y1', 'z1', 'x2', 'y2', 'z2', 'x3', 'y3', 'z3'])
+            columns=['File','Score','x1','y1','z1','x2','y2','z2','x3','y3','z3'])
 
-        if norm_score_file is None or not os.path.exists(norm_score_file):
-            if norm_score_file is None:
-                print(f'WARNING: norm_score path was NOT specified, so energies won\'t be added to {output}')
-            elif not os.path.exists(norm_score_file):
-                print(f'WARNING: {norm_score_file} was NOT FOUND, so energies won\'t be added to {output}')
-            for i, row in df_result.iterrows():
-                encoding_id = file_names[i]
-                df_result.at[i, 'ids'] = encoding_id
-
-        elif norm_score_file is not None:
-            df_score = pd.read_csv(norm_score_file)
-            score_ids = df_score.ids.to_list()
-            for i, row in df_result.iterrows():
-                encoding_id = file_names[i]
-                df_result.at[i, 'ids'] = encoding_id
-                if encoding_id in score_ids:
-                    df_result.at[i, 'norm_score'] = float(df_score[df_score.ids == encoding_id].norm_score)
-                else:
-                    print(f'WARNING: No ids from norm_score coincided with file: {file_names[i]}. Setting 0 value')
-            print('WARNING: If you haven\'t changed the file names of your PDBs to `program_num.pdb`, norm_score '
-                  'column will be set to 0.')
+        for i, row in df_result.iterrows():
+            df_result.at[i,'File'] = file_names[i]
+            # TODO: Add adecuate Parser
+            # parser = Parser()
         df_result.to_csv(output, index=False)

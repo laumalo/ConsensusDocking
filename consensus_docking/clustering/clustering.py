@@ -3,7 +3,7 @@ Clustering module
 """
 import os
 import pandas as pd
-from consensus_docking.clustering import ParserEncoding
+from parserEncoding import ParserEncoding
 
 
 class Clustering:
@@ -96,16 +96,16 @@ class Clustering:
             raise ValueError('At least use_coord must be True to have data to make the clustering!')
 
         if self.clustering_method == 'dbscan':
-            from consensus_docking.clustering import ClusteringDBSCAN
+            from clusteringDBSCAN import ClusteringDBSCAN
             self.model = ClusteringDBSCAN(self.data, eps=eps, metric=self.metric, metric_param=self.metric_param,
                                           min_samples=self.min_samples, data_weight=self.data_weight, n_jobs=n_jobs)
         elif self.clustering_method == 'optics':
-            from consensus_docking.clustering import ClusteringOPTICS
+            from clusteringOPTICS import ClusteringOPTICS
             self.model = ClusteringOPTICS(self.data, metric=self.metric, metric_param=self.metric_param,
                                           cluster_method='xi', xi=xi, eps=eps, min_samples=self.min_samples,
                                           n_jobs=n_jobs)
         elif self.clustering_method == 'kmeans':
-            from consensus_docking.clustering import ClusteringKMeans
+            from clusteringKMeans import ClusteringKMeans
             self.model = ClusteringKMeans(self.data, n_clusters=n_clusters, initial_clusters=initial_clusters,
                                           max_iter=max_iter, n_init=n_init, data_weight=self.data_weight)
             if n_jobs is not None and n_jobs > 1:
