@@ -10,8 +10,8 @@ import linecache
 import logging
 import sys 
 
-logging.basicConfig(format="%(message)s", level=logging.INFO,
-                    stream=sys.stdout)
+logging.basicConfig(format='%(asctime)s [%(module)s] - %(levelname)s: %(message)s',  datefmt='%d-%b-%y %H:%M:%S',
+                    level=logging.INFO, stream=sys.stdout)
 
 
 class Encoder(object):
