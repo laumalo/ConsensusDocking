@@ -15,13 +15,12 @@ class Encoding(object):
         """
         self.df = None
 
-    @staticmethod
-    def from_csv(encoding_file): 
+
+    def from_csv(self, encoding_file):
         self.df = pd.read_csv(encoding_file, header=0)
 
 
-    @staticmethod
-    def from_dataframe(df): 
+    def from_dataframe(self, df):
         self.df = df
 
 
@@ -82,7 +81,10 @@ class Encoding(object):
         -------
         pandas DataFrame with the desired columns.
         """
-        self.parse()
+        if self.df is None:
+            logging.error("No data was found in encoding_object.df. Make sure to get the encoding data from either"
+                          " csv or pandas DataFrame.")
+            raise TypeError("You first have to parser the encoding using from_csv or from_df methods.")
         return self.__select_df_col(self.df, selected_columns)
 
     def get_coord(self):
@@ -94,7 +96,10 @@ class Encoding(object):
         pandas DataFrame with the coordinate columns.
         """
         selected_columns = ['x1', 'y1', 'z1', 'x2', 'y2', 'z2', 'x3', 'y3', 'z3']
-        self.parse()
+        if self.df is None:
+            logging.error("No data was found in encoding_object.df. Make sure to get the encoding data from either"
+                          " csv or pandas DataFrame.")
+            raise TypeError("You first have to parser the encoding using from_csv or from_df methods.")
         return self.__select_df_col(self.df, selected_columns)
 
     def get_coord_norm_sc(self):
@@ -106,7 +111,10 @@ class Encoding(object):
         pandas DataFrame with the coordinate and norm_score columns.
         """
         selected_columns = ['norm_score', 'x1', 'y1', 'z1', 'x2', 'y2', 'z2', 'x3', 'y3', 'z3']
-        self.parse()
+        if self.df is None:
+            logging.error("No data was found in encoding_object.df. Make sure to get the encoding data from either"
+                          " csv or pandas DataFrame.")
+            raise TypeError("You first have to parser the encoding using from_csv or from_df methods.")
         return self.__select_df_col(self.df, selected_columns)
 
     def get_ids(self):
