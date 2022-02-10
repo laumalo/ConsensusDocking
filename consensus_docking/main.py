@@ -28,6 +28,8 @@ def parse_args(args):
                         help="Configuration file.")
     parser.add_argument("-c", "--n_proc", type=int,
                         help='Number of processors.', default=1)
+
+    parsed_args = parser.parse_args(args)
     return parsed_args
 
 def parse_conf_file(conf_file):
@@ -97,7 +99,8 @@ def run_preprocessing(params, path, output_path, n_proc):
             else:
                 logging.info('     Aligment of structures to {}:'
                              .format(params['reference']))
-                folders_to_align = list(params['align'].split(','))
+                folders_to_align = \
+                    [folder.strip() for folder in list(params['align'].split(','))]
                 if not all([f in folders for f in folders_to_align]):
                     logging.error('Wrong selection of folders to align.')
                 else: 
@@ -115,7 +118,8 @@ def run_preprocessing(params, path, output_path, n_proc):
                               'the files.')
             else:
                 logging.info('     Parsing scoring files.')
-                folders_to_parse = list(params['parser'].split(','))
+                folders_to_parse = \
+                    [folder.strip() for folder in list(params['parse'].split(','))]
                 folders_file_to_parse = \
                     zip(folders_to_parse, 
                         list(params['scoring_files'].split(',')))
@@ -191,8 +195,24 @@ def run_encoding(params, path, output_path, n_proc):
                               index=False, encoding='utf-8-sig')
             logging.info('     Encoding saved to {}'.format(merged_csv_output))
 
-def run_clustering(params, path, output_path, n_pro):  
-    pass 
+def run_clustering(params, path, output_path, n_pro):
+    """
+    """
+    AVAILABLE_KEYS = ['encoding_file','clustering_algorithm', 'eps', 'metric', 
+                      'num_iter','keep_clusters']
+    keys = [k for k in params]
+
+    from consensus_docking.encoding import Encoding
+    encoding = Encoding.from_csv(params['encoding_file'])
+    encoding.df.columns = \
+        ['File', 'Score','x1','y1','z1','x2','y2','z2','x3','y3','z3']
+    coords = encoding.df[['x1','y1','z1','x2','y2','z2','x3','y3','z3']]
+    
+    from consensus_docking.clustering import Clustering
+    clusters = Clustering(data = coords,
+                          clustering_algorithm = params['clustering_algorithm']),
+                           
+
 
 def run_analysis(params, path, output_path, n_pro): 
     pass 

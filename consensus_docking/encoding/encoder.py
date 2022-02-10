@@ -33,6 +33,8 @@ class Encoder(object):
         self.path = dockings_path
         self.docking_program = docking_program.lower()
         self.chain = chain
+
+        self.encoding = None
         
 
     def get_most_dist_points(self, data, K, MAX_LOOPS=20):
@@ -135,6 +137,8 @@ class Encoder(object):
         except Exception:
             logging.warning('Skipping file {}.'.format(file_name))
 
+    
+
     def run_encoding(self, output, norm_score_file=None, n_proc=1):
         """
         It runs the encoding of all the conformations found in the output
@@ -207,6 +211,14 @@ class Encoder(object):
                 else:
                     logging.warning(f'No ids from norm_score coincided with ' + 
                                      'file: {file_names[i]}.Setting 0 value')
-        
+
+        # Save as an Encoding object
+        from consensus_docking.encoding import Encoding
+        self.encoding = Encoding.from_dataframe(df_encoding) 
+
         # Export output file
         df_encoding.to_csv(output, index=False)
+
+    @property
+    def encoding(self): 
+        return self.encoding
