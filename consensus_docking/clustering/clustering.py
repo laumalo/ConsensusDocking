@@ -85,36 +85,43 @@ class Clustering:
         self.data_weight = data_weight
 
         if data_sel_list is not None:
-            print(f"Using the following columns: {data_sel_list}.")
+            logging.info(f"Using the following columns: {data_sel_list}.")
             self.data = self.__get_selected_col(data_sel_list)
         elif use_coord and not use_norm_sc:
-            print("Only using coordinates.")
+            logging.info(f"Only using coordinates.")
             self.data = self.__get_coord()
         elif use_coord and use_norm_sc:
-            print("Using coordinates and normalized scores.")
+            logging.info("Using coordinates and normalized scores.")
             self.data = self.__get_coord_norm_sc()
         elif use_norm_sc and not use_coord:
+            logging.error("Clustering cannot be run only using norm_score. Please specify which columns do you want"
+                          "or set use_coord to True.")
             raise ValueError('You cannot only use norm_score to cluster! Please, specify which columns do you want to '
                              'select with the input parameter data_sel_list or select use_coord=True to also use '
                              'coordinates')
         elif not use_norm_sc and not use_coord and data_sel_list is None:
+            logging.error("No features were selected to perform the clustering. At least use_coord must be True to "
+                          "have data to make the clustering!")
             raise ValueError('At least use_coord must be True to have data to make the clustering!')
 
         if self.clustering_method == 'dbscan':
-            from clusteringDBSCAN import ClusteringDBSCAN
+            logging.info("Initializing DBSCAN clustering method.")
+            from consensus_docking.clustering import ClusteringDBSCAN
             self.model = ClusteringDBSCAN(self.data, eps=eps, metric=self.metric, metric_param=self.metric_param,
                                           min_samples=self.min_samples, data_weight=self.data_weight, n_jobs=n_jobs)
         elif self.clustering_method == 'optics':
-            from clusteringOPTICS import ClusteringOPTICS
+            logging.info("Initializing OPTICS clustering method.")
+            from consensus_docking.clustering import ClusteringOPTICS
             self.model = ClusteringOPTICS(self.data, metric=self.metric, metric_param=self.metric_param,
                                           cluster_method='xi', xi=xi, eps=eps, min_samples=self.min_samples,
                                           n_jobs=n_jobs)
         elif self.clustering_method == 'kmeans':
-            from clusteringKMeans import ClusteringKMeans
+            logging.info("Initializing KMeans clustering method.")
+            from consensus_docking.clustering import ClusteringKMeans
             self.model = ClusteringKMeans(self.data, n_clusters=n_clusters, initial_clusters=initial_clusters,
                                           max_iter=max_iter, n_init=n_init, data_weight=self.data_weight)
             if n_jobs is not None and n_jobs > 1:
-                print(f"Warning: Despite specifying n_jobs to {n_jobs}, KMeans clustering can only run as a single job")
+                logging.warning(f"Despite specifying n_jobs to {n_jobs}, KMeans can only run as a single job")
 
     def __get_coord(self):
         """
@@ -304,6 +311,11 @@ class Clustering:
         import yaml
         with open(os.path.join(save_path, filename), 'w') as f:
             yaml.dump(dictionary, f)
+
+    def write_cluster_encoding(self):
+        """
+        Writes an encoding file for each cluster
+        """
 
     def run(self, save_index_dict=False, save_poses_dict=False, save_centroid_poses=False, save_centroid_index=False,
             save_path='.'):
