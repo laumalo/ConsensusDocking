@@ -56,7 +56,7 @@ class Encoder(object):
             Indices of the K most distance points.
         """
 
-        def distances(ndadocking_programrray_0, ndarray_1):
+        def distances(ndarray_0, ndarray_1):
             """
             It computes the distance between two arrays of coordinates. 
 
@@ -156,8 +156,7 @@ class Encoder(object):
         global array
 
         def init_arr(array):
-            globals()['array'] = np.frombuffer(array, dtype='float')
-                                 .reshape(len(file_paths), 11)
+            globals()['array'] = np.frombuffer(array, dtype='float').reshape(len(file_paths), 11)
 
         # Initialize array 
         file_paths = \
