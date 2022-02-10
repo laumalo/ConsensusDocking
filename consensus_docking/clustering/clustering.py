@@ -316,6 +316,7 @@ class Clustering:
         """
         Writes an encoding file for each cluster
         """
+        pass
 
     def run(self, save_index_dict=False, save_poses_dict=False, save_centroid_poses=False, save_centroid_index=False,
             save_path='.'):
