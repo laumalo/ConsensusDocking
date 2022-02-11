@@ -4,10 +4,11 @@ Clustering module
 import os
 import sys
 import logging
+import numpy as np
 import pandas as pd
 from consensus_docking.encoding import Encoding
 
-logging.basicConfig(format='%(asctime)s [%(module)s] - %(levelname)s: %(message)s',  datefmt='%d-%b-%y %H:%M:%S',
+logging.basicConfig(format='%(asctime)s [%(module)s] - %(levelname)s: %(message)s', datefmt='%d-%b-%y %H:%M:%S',
                     level=logging.INFO, stream=sys.stdout)
 
 
@@ -312,14 +313,24 @@ class Clustering:
         with open(os.path.join(save_path, filename), 'w') as f:
             yaml.dump(dictionary, f)
 
-    def write_cluster_encoding(self):
+    def save_cluster_encoding(self, cluster_id, save_path='.'):
         """
-        Writes an encoding file for each cluster
+        Saves an encoding file containing only the poses for that belong to cluster with cluster_id
+        Parameters
+        -------
+        cluster_id : int
+            Value of the clustering.
+        save_path : str
+            Path to the folder in which we want to save the filtered encoding.
         """
-        pass
+        encoding = Encoding()
+        encoding.from_csv(self.encoding_file_path)
+        filtered_encoding = encoding.df[self.labels == cluster_id]
+        filename = os.path.join(save_path, f'encoding_{self.clustering_method}_cluster_id_{cluster_id}.csv')
+        filtered_encoding.to_csv(filename, index=False)
 
     def run(self, save_index_dict=False, save_poses_dict=False, save_centroid_poses=False, save_centroid_index=False,
-            save_path='.'):
+            save_cluster_encoding=False, save_path='.'):
         """
         Runs the clustering, save the labels to self.labels, prints a report. If specified it can generate yaml files
         with the index and/or poses ids for each cluster.
@@ -333,9 +344,10 @@ class Clustering:
             If True, it saves a yaml file of the pose index of each cluster centroid.
         save_centroid_poses : bool
             If True, it saves a yaml file of the poses ids of each cluster centroid.
+        save_cluster_encoding : bool
+            If True, it saves a csv file with the encoding information for each cluster in save_path.
         save_path : str
-            Path to the folder in which we want to save the yaml file (if save_dict_to_yaml=True). Notice that the
-            output file will be always have the filename: cluster_poses_dict.yaml.
+            Path to the folder in which we want to save the output yaml and csv files (if specified True)
         """
         self.model.print_info()
         self.model.fit()
@@ -358,3 +370,9 @@ class Clustering:
         elif save_centroid_index:
             self.get_centroids_poses(save_centroid_poses_to_yaml=False, save_centroid_index_to_yaml=True,
                                      yaml_path=save_path)
+
+        if save_cluster_encoding:
+            print(self.labels)
+            logging.info("Saving clusters encodings")
+            for c in np.unique(self.labels):
+                self.save_cluster_encoding(c, save_path=save_path)
