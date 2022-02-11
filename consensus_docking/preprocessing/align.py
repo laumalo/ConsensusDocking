@@ -7,6 +7,13 @@ import numpy as np
 import scipy.spatial as spatial
 import torch 
 
+import logging
+import sys 
+
+logging.basicConfig(format=
+    '%(asctime)s [%(module)s] - %(levelname)s: %(message)s',
+    datefmt='%d-%b-%y %H:%M:%S', level=logging.INFO, stream=sys.stdout)
+
 class Aligner_3points(object): 
     """
     Aligner object based on the 3 CA method.
@@ -167,10 +174,10 @@ class Aligner_3points(object):
 
         # Check if the structures are already aligned or not
         if (A==B).all(): 
-            print(' -   Query and ref proteins already aligned.')
+            logging.info(' -   Query and ref proteins already aligned.')
         else: 
-            print(' -   Query and ref proteins are not aligned.')
-            print(' -   Aligning query protein: {}...'.format(pdb_query))
+            logging.info(' -   Query and ref proteins are not aligned.')
+            logging.info(' -   Aligning query protein: {}...'.format(pdb_query))
 
             # Compute rotation and translation in 3D
             R,t = self.find_rigid_alignment(A, B)
