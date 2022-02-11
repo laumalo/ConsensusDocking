@@ -100,16 +100,21 @@ def run_preprocessing(params, path, output_path, n_proc):
                 logging.info('     Aligment of structures to {}:'
                              .format(params['reference']))
                 folders_to_align = \
-                    [folder.strip() for folder in list(params['align'].split(','))]
+                    [folder.strip() for folder in list(params['align']
+                    .split(','))]
+                folder_chain_to_align = \
+                    [list(f.split('_')) for f in folders_to_align]
                 if not all([f in folders for f in folders_to_align]):
                     logging.error('Wrong selection of folders to align.')
                 else: 
-                    for folder in folders_to_align: 
+                    for folder, chains in folders_chian_to_align:
+                        chains_to_align = list(chains.split())
                         logging.info('         Aligment of {}:'.format(folder))
                         folder_path = os.path.join(path, folder)
                         
-                        aligner = Aligner(params['reference'], 'B')
-                        aligner.run_aligment(folder_path, 'B', n_proc)
+                        aligner = Aligner(params['reference'], chains_to_align)
+                        aligner.run_aligment(folder_path, chains_to_align,
+                                             n_proc)
 
         # Parse scoring files
         if 'parser' in keys:
@@ -119,7 +124,8 @@ def run_preprocessing(params, path, output_path, n_proc):
             else:
                 logging.info('     Parsing scoring files.')
                 folders_to_parse = \
-                    [folder.strip() for folder in list(params['parse'].split(','))]
+                    [folder.strip() for folder in list(params['parse']
+                        .split(','))]
                 folders_file_to_parse = \
                     zip(folders_to_parse, 
                         list(params['scoring_files'].split(',')))

@@ -203,7 +203,7 @@ class Aligner(object):
     """
     Aligner object based on MdTraj aligment of CA. 
     """
-    def __init__(self, pdb_ref, chain_ref): 
+    def __init__(self, pdb_ref, chains_ref): 
         """
         It initialices and Aligner object with the reference structure. 
 
@@ -215,10 +215,10 @@ class Aligner(object):
             Chain Id of the reference structure. 
         """
         self.pdb_ref = pdb_ref
-        self.chain_ref = chain_ref
+        self.chains_ref = chains_ref
 
 
-    def get_chains_dict(self, pdb):
+    def _get_chains_dict(self, pdb):
         """
         It generates a dictionary with the chain indices (in Mdtraj) to chain
         names in the PDB file. 
@@ -242,7 +242,33 @@ class Aligner(object):
                      if line.startswith('ATOM') or line.startswith('HETATOM')]))
         return {id:index for id,index in zip(chains_pdb_ids, chain_indices)} 
 
-    def align(self, query_structure, ref_traj, chains, remove = True):
+    def _get_atoms_to_align(self, structure, chains):
+        """
+        It gets the CA of the chains selected. 
+
+        Parameters
+        ----------
+        structure : str
+            Path to the PDB structure. 
+        chains : list
+            List of chains to select atoms from. 
+
+        Returns
+        -------
+        atoms_to_align : str
+            List CA indices of the fetched chains. 
+        """ 
+        atoms_align_chains = []
+        for chain in chains:
+            chain_id = self._get_chains_dict(structure).get(chain)
+            atoms_to_align = \
+                ref_traj.topology.select("chainid {} and name CA"
+                                         .format(chain_id))
+            atoms_align_chains.append(atoms_to_align)
+        return np.concatenate(atoms_align_chains)   
+
+    def align(self, query_structure, ref_traj, atoms_to_align_ref, chains,
+              remove = True):
         """
         It aligns a structure using MdTraj implementation. 
 
@@ -252,24 +278,23 @@ class Aligner(object):
             Path to the PDB of the structure to align.
         ref_traj : mdtraj.Trajectory object
             Reference trajectory. 
+        atoms_to_align_ref : list
+            List of atoms to align to.
         chains : list 
             List of chains ids to align the structure. 
+        remove : bool
+            True if you want to remove the unaligned structure.
         """
         
-        # Load reference receptor structure
-        atoms_align_chains = []
-        for chain in chains:
-            chain_id = self.get_chains_dict(query_structure).get(chain)
-            atoms_to_align = \
-                ref_traj.topology.select("chainid {} and name CA"
-                                         .format(chain_id))
-            altoms_to_align_ref.append(atoms_to_align)
-        atoms_to_align_ref = np.concatenate(atoms_align_chains)
+        # Atoms to align 
+        atoms_to_align_query = self._get_atoms_to_align(query_structure, chains)
         
         # Superposition of selected chains
         query_traj = md.load(query_structure)
-        top_query = query_traj.topology
-        atoms_to_align_query = top_query.select("chainid 0 and name CA")
+        for chain in chains: 
+            chain_id = 
+        atoms_to_align_query = \
+            query_traj.topology.select("chainid 0 and name CA")
         query_traj.superpose(ref_traj,
                              atom_indices = atoms_to_align_query,
                              ref_atom_indices = atoms_to_align_ref)
@@ -297,8 +322,14 @@ class Aligner(object):
         files = [os.path.join(path, file) for file in 
                  os.listdir(path) if file.endswith('.pdb')]
  
+        # Get reference atoms to align
+        atoms_to_align_ref = self._get_atoms_to_align(self.pdb_ref,
+                                                      self.chains_ref)
+
+        # Function to be parallelized
         align_structures_paral = partial(align_structures,
-            ref_traj = md.load(self.pdb_ref), chains = chains)
+            ref_traj = md.load(self.pdb_ref),
+            atoms_to_align_ref = atoms_to_align_ref, chains = chains)
         
         with Pool(args.n_proc) as p:
             list(p.imap(align_structures_paral, files))
