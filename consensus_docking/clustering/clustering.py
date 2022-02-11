@@ -372,7 +372,6 @@ class Clustering:
                                      yaml_path=save_path)
 
         if save_cluster_encoding:
-            print(self.labels)
             logging.info("Saving clusters encodings")
             for c in np.unique(self.labels):
                 self.save_cluster_encoding(c, save_path=save_path)
