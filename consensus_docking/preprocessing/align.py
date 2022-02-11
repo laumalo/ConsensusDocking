@@ -201,7 +201,7 @@ class Aligner_3points(object):
 
 class Aligner(object):
     """
-    Aligner object based on MdTraj aligment of CA.
+    Aligner object based on MdTraj aligment of CA. 
     """
     def __init__(self, pdb_ref, chain_ref): 
         """
@@ -217,7 +217,32 @@ class Aligner(object):
         self.pdb_ref = pdb_ref
         self.chain_ref = chain_ref
 
-    def align(query_structure, ref_traj):
+
+    def get_chains_dict(self, pdb):
+        """
+        It generates a dictionary with the chain indices (in Mdtraj) to chain
+        names in the PDB file. 
+
+        Parameters
+        ----------
+        pdb : str
+            PDB file.
+
+        Returns
+        -------
+        d : dict
+            Dictionary chain idex/ID. 
+        """
+        from more_itertools import unique_everseen
+
+        chain_indices = [chain.index for chain in md.load(pdb).topology.chains]
+        with open(pdb, 'r') as f: 
+            chains_pdb_ids = \
+                list(unique_everseen([line[21:22] for line in f.readlines() 
+                     if line.startswith('ATOM') or line.startswith('HETATOM')]))
+        return {id:index for id,index in zip(chains_pdb_ids, chain_indices)} 
+
+    def align(self, query_structure, ref_traj, chains, remove = True):
         """
         It aligns a structure using MdTraj implementation. 
 
@@ -227,13 +252,21 @@ class Aligner(object):
             Path to the PDB of the structure to align.
         ref_traj : mdtraj.Trajectory object
             Reference trajectory. 
+        chains : list 
+            List of chains ids to align the structure. 
         """
         
         # Load reference receptor structure
-        top_ref = ref_traj.topology
-        atoms_to_align_ref = top_ref.select("chainid 0 and name CA")
+        atoms_align_chains = []
+        for chain in chains:
+            chain_id = self.get_chains_dict(query_structure).get(chain)
+            atoms_to_align = \
+                ref_traj.topology.select("chainid {} and name CA"
+                                         .format(chain_id))
+            altoms_to_align_ref.append(atoms_to_align)
+        atoms_to_align_ref = np.concatenate(atoms_align_chains)
         
-        # Iterates over the docking poses generated for this swarm
+        # Superposition of selected chains
         query_traj = md.load(query_structure)
         top_query = query_traj.topology
         atoms_to_align_query = top_query.select("chainid 0 and name CA")
@@ -242,17 +275,30 @@ class Aligner(object):
                              ref_atom_indices = atoms_to_align_ref)
         output_path = query_structure.replace('.pdb', '_align.pdb')
 
+        # Export alignes structure
         query_traj.save(output_path)
-        os.remove(query_structure)
+        if remove: 
+            os.remove(query_structure)
 
-    def run_aligment(path, n_proc = 1):
+    def run_aligment(self, path, chains, n_proc = 1):
         """
-        It iterates (in parallel) over all the swam folders to aligned the 
-        generated poses to the reference receptor structure. 
+        It iterates (in parallel) over all the structures and aligns them to a 
+        reference (only the selected chains) structure. 
+
+        Parameters
+        ----------
+        path : str 
+            Path to the folder to align its structures. 
+        chains : list 
+            List of chains to align. 
+        n_proc : int
+            Number of processors. 
         """
         files = [os.path.join(path, file) for file in 
                  os.listdir(path) if file.endswith('.pdb')]
-        ref_traj = md.load(self.pdb_ref)   
-        align_structures_paral = partial(align_structures, ref_traj = ref_traj)
+ 
+        align_structures_paral = partial(align_structures,
+            ref_traj = md.load(self.pdb_ref), chains = chains)
+        
         with Pool(args.n_proc) as p:
             list(p.imap(align_structures_paral, files))
