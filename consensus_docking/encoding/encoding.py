@@ -126,7 +126,10 @@ class Encoding(object):
         pandas DataFrame with the coordinate and norm_score columns.
         """
         selected_columns = ['ids']
-        self.parse()
+        if self.df is None:
+            logging.error("No data was found in encoding_object.df. Make sure to get the encoding data from either"
+                          " csv or pandas DataFrame.")
+            raise TypeError("You first have to parser the encoding using from_csv or from_df methods.")
         return self.__select_df_col(self.df, selected_columns)
 
     def get_ids_by_row(self, index_list):
