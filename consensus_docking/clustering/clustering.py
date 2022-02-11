@@ -2,8 +2,13 @@
 Clustering module
 """
 import os
+import sys
+import logging
 import pandas as pd
-from parserEncoding import ParserEncoding
+from consensus_docking.encoding import Encoding
+
+logging.basicConfig(format='%(asctime)s [%(module)s] - %(levelname)s: %(message)s',  datefmt='%d-%b-%y %H:%M:%S',
+                    level=logging.INFO, stream=sys.stdout)
 
 
 class Clustering:
@@ -54,7 +59,7 @@ class Clustering:
         data_weight : array-like of shape (n_samples,)
             Array like object specifying the weight that we want to use for each pose (taking into account the order in
             the encoding file). Remember scaling min_samples accordingly.
-            Note: Ideally this parameter will end up being a bool parameter since the parserEncoding object will be able
+            Note: Ideally this parameter will end up being a bool parameter since the Encoding object will be able
              to generate a list of weight of each pose according the program that generate that pose.
         n_jobs : int
             The number of parallel jobs to run. None means 1. -1 means using all processors.
@@ -80,61 +85,70 @@ class Clustering:
         self.data_weight = data_weight
 
         if data_sel_list is not None:
-            print(f"Using the following columns: {data_sel_list}.")
+            logging.info(f"Using the following columns: {data_sel_list}.")
             self.data = self.__get_selected_col(data_sel_list)
         elif use_coord and not use_norm_sc:
-            print("Only using coordinates.")
+            logging.info(f"Only using coordinates.")
             self.data = self.__get_coord()
         elif use_coord and use_norm_sc:
-            print("Using coordinates and normalized scores.")
+            logging.info("Using coordinates and normalized scores.")
             self.data = self.__get_coord_norm_sc()
         elif use_norm_sc and not use_coord:
+            logging.error("Clustering cannot be run only using norm_score. Please specify which columns do you want"
+                          "or set use_coord to True.")
             raise ValueError('You cannot only use norm_score to cluster! Please, specify which columns do you want to '
                              'select with the input parameter data_sel_list or select use_coord=True to also use '
                              'coordinates')
         elif not use_norm_sc and not use_coord and data_sel_list is None:
+            logging.error("No features were selected to perform the clustering. At least use_coord must be True to "
+                          "have data to make the clustering!")
             raise ValueError('At least use_coord must be True to have data to make the clustering!')
 
         if self.clustering_method == 'dbscan':
-            from clusteringDBSCAN import ClusteringDBSCAN
+            logging.info("Initializing DBSCAN clustering method.")
+            from consensus_docking.clustering import ClusteringDBSCAN
             self.model = ClusteringDBSCAN(self.data, eps=eps, metric=self.metric, metric_param=self.metric_param,
                                           min_samples=self.min_samples, data_weight=self.data_weight, n_jobs=n_jobs)
         elif self.clustering_method == 'optics':
-            from clusteringOPTICS import ClusteringOPTICS
+            logging.info("Initializing OPTICS clustering method.")
+            from consensus_docking.clustering import ClusteringOPTICS
             self.model = ClusteringOPTICS(self.data, metric=self.metric, metric_param=self.metric_param,
                                           cluster_method='xi', xi=xi, eps=eps, min_samples=self.min_samples,
                                           n_jobs=n_jobs)
         elif self.clustering_method == 'kmeans':
-            from clusteringKMeans import ClusteringKMeans
+            logging.info("Initializing KMeans clustering method.")
+            from consensus_docking.clustering import ClusteringKMeans
             self.model = ClusteringKMeans(self.data, n_clusters=n_clusters, initial_clusters=initial_clusters,
                                           max_iter=max_iter, n_init=n_init, data_weight=self.data_weight)
             if n_jobs is not None and n_jobs > 1:
-                print(f"Warning: Despite specifying n_jobs to {n_jobs}, KMeans clustering can only run as a single job")
+                logging.warning(f"Despite specifying n_jobs to {n_jobs}, KMeans can only run as a single job")
 
     def __get_coord(self):
         """
-        Parses the encoding file and gets coord using a ParserEncoding object and returns it in a DataFrame.
+        Parses the encoding file and gets coord using an Encoding object and returns it in a DataFrame.
         Returns
         -------
         DataFrame with the nine coordinates in the encoding file.
         """
-        parser = ParserEncoding(self.encoding_file_path)
+        parser = Encoding()
+        parser.from_csv(self.encoding_file_path)
         return parser.get_coord()
 
     def __get_coord_norm_sc(self):
         """
-        Parses the encoding file and gets coord and normalized score using a ParserEncoding object and returns it in a
+        Parses the encoding file and gets coord and normalized score using a Encoding object and returns it in a
         DataFrame.
         Returns
         -------
         DataFrame with the nine coordinates and the normalized score in the encoding file.
         """
-        parser = ParserEncoding(self.encoding_file_path)
+        parser = Encoding()
+        parser.from_csv(self.encoding_file_path)
         return parser.get_coord_norm_sc()
 
     def __get_selected_col(self, selected_columns):
         """
-        Parses the encoding file and gets the input columns using a ParserEncoding object and returns it in a
+        Parses the encoding file and gets the input columns using an Encoding object and returns it in a
         DataFrame.
         Parameters
         ----------
@@ -145,7 +159,8 @@ class Clustering:
         -------
         DataFrame with the selected columns information in the encoding file.
         """
-        parser = ParserEncoding(self.encoding_file_path)
+        parser = Encoding()
+        parser.from_csv(self.encoding_file_path)
         return parser.get_columns_by_name(selected_columns)
 
     def __get_ids_by_index(self, index_list):
@@ -159,7 +174,8 @@ class Clustering:
         -------
         List of str with the ids for each pose.
         """
-        parser = ParserEncoding(self.encoding_file_path)
+        parser = Encoding()
+        parser.from_csv(self.encoding_file_path)
         return parser.get_ids_by_row(index_list)
 
     def __get_cluster_counts(self):
@@ -295,6 +311,12 @@ class Clustering:
         import yaml
         with open(os.path.join(save_path, filename), 'w') as f:
             yaml.dump(dictionary, f)
+
+    def write_cluster_encoding(self):
+        """
+        Writes an encoding file for each cluster
+        """
+        pass
 
     def run(self, save_index_dict=False, save_poses_dict=False, save_centroid_poses=False, save_centroid_index=False,
             save_path='.'):
