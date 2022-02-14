@@ -1,14 +1,22 @@
 """
-This module containts all the methods related with the aligment of PDB structures.
+This module containts all the methods related with the aligment of 
+PDB structures.
 """
 from biopandas.pdb import PandasPdb
 import numpy as np
 import scipy.spatial as spatial
 import torch 
 
-class Aligner(object): 
+import logging
+import sys 
+
+logging.basicConfig(format=
+    '%(asctime)s [%(module)s] - %(levelname)s: %(message)s',
+    datefmt='%d-%b-%y %H:%M:%S', level=logging.INFO, stream=sys.stdout)
+
+class Aligner_3points(object): 
     """
-    Aligner object.
+    Aligner object based on the 3 CA method.
     """
     def __init__(self, pdb_ref, chain_ref): 
         """
@@ -23,7 +31,8 @@ class Aligner(object):
         """
         self.pdb_ref = pdb_ref
         self.chain_ref = chain_ref
-        self.atoms_to_align_ref = self.get_3points_lines(self.pdb_ref, self.chain_ref)
+        self.atoms_to_align_ref = \
+            self.get_3points_lines(self.pdb_ref, self.chain_ref)
 
 
     def get_most_dist_points(self, data, K, MAX_LOOPS=20):
@@ -97,7 +106,8 @@ class Aligner(object):
             DataFrame with the 3 CA selected.
         """
         ppdb = PandasPdb().read_pdb(pdb)
-        df = ppdb.df['ATOM'][ppdb.df['ATOM']['atom_name'] == 'CA'][ppdb.df['ATOM']['chain_id'] == chain]
+        df = ppdb.df['ATOM'][ppdb.df['ATOM']['atom_name'] == 'CA']\
+             [ppdb.df['ATOM']['chain_id'] == chain]
         coords = df[['x_coord', 'y_coord', 'z_coord']].values
         dist_atoms = self.get_most_dist_points(coords, K=3)
         return df.iloc[dist_atoms]
@@ -105,8 +115,9 @@ class Aligner(object):
 
     def find_rigid_alignment(self, A, B):
         """
-        It computes the rotation and translation matrix given to sets of 3D points. 
-        At least each set has to containt 3 proints. Implementation based on the Kabash algorithm. 
+        It computes the rotation and translation matrix given to sets of 3D 
+        points. At least each set has to containt 3 proints. Implementation 
+        based on the Kabash algorithm. 
 
         Parameters
         ----------
@@ -144,8 +155,8 @@ class Aligner(object):
 
     def align(self, pdb_query, chain_query): 
         """
-        It performs a rigid aligment of the query chain against the reference structure.
-        This method is useful to align the static protein. 
+        It performs a rigid aligment of the query chain against the reference 
+        structure. This method is useful to align the static protein. 
 
 
         Parameters
@@ -163,10 +174,10 @@ class Aligner(object):
 
         # Check if the structures are already aligned or not
         if (A==B).all(): 
-            print(' -   Query and ref proteins already aligned.')
+            logging.info(' -   Query and ref proteins already aligned.')
         else: 
-            print(' -   Query and ref proteins are not aligned.')
-            print(' -   Aligning query protein: {}...'.format(pdb_query))
+            logging.info(' -   Query and ref proteins are not aligned.')
+            logging.info(' -   Aligning query protein: {}...'.format(pdb_query))
 
             # Compute rotation and translation in 3D
             R,t = self.find_rigid_alignment(A, B)
@@ -179,10 +190,153 @@ class Aligner(object):
             coords = df[['x_coord', 'y_coord', 'z_coord']].values
             new_coords = np.array([np.dot(R,coord)  + t for coord in coords])
 
-            for i, (value, new_value) in enumerate(zip(df[['x_coord', 'y_coord', 'z_coord']].values, new_coords)): 
+            for i, (value, new_value) in enumerate(
+                zip(df[['x_coord', 'y_coord', 'z_coord']].values, new_coords)): 
                 df.at[i, 'x_coord'] = new_value[0]
                 df.at[i, 'y_coord'] = new_value[1]
                 df.at[i, 'z_coord'] = new_value[2]
             
             # Save aligned structure to PDB.
             ppdb.to_pdb(pdb_query.replace('.pdb', '_aligned.pdb'))
+
+        def run_aligment(path, chain, n_proc = 1): 
+            files = [os.path.join(path,file) for file in os.listdir(path) 
+                     if file.endswith('.pdb')]
+            align_paral = partial(align, chain = chain)
+            with Pool(n_proc) as p:
+                list(p.imap(align_paral, files))
+
+class Aligner(object):
+    """
+    Aligner object based on MdTraj aligment of CA. 
+    """
+    def __init__(self, pdb_ref, chains_ref): 
+        """
+        It initialices and Aligner object with the reference structure. 
+
+        Parameters
+        ----------
+        pdb_ref : str
+            Path to the reference PDB. 
+        chain_ref : str     
+            Chain Id of the reference structure. 
+        """
+        self.pdb_ref = pdb_ref
+        self.chains_ref = chains_ref
+
+
+    def _get_chains_dict(self, pdb):
+        """
+        It generates a dictionary with the chain indices (in Mdtraj) to chain
+        names in the PDB file. 
+
+        Parameters
+        ----------
+        pdb : str
+            PDB file.
+
+        Returns
+        -------
+        d : dict
+            Dictionary chain idex/ID. 
+        """
+        from more_itertools import unique_everseen
+
+        chain_indices = [chain.index for chain in md.load(pdb).topology.chains]
+        with open(pdb, 'r') as f: 
+            chains_pdb_ids = \
+                list(unique_everseen([line[21:22] for line in f.readlines() 
+                     if line.startswith('ATOM') or line.startswith('HETATOM')]))
+        return {id:index for id,index in zip(chains_pdb_ids, chain_indices)} 
+
+    def _get_atoms_to_align(self, structure, chains):
+        """
+        It gets the CA of the chains selected. 
+
+        Parameters
+        ----------
+        structure : str
+            Path to the PDB structure. 
+        chains : list
+            List of chains to select atoms from. 
+
+        Returns
+        -------
+        atoms_to_align : str
+            List CA indices of the fetched chains. 
+        """ 
+        atoms_align_chains = []
+        for chain in chains:
+            chain_id = self._get_chains_dict(structure).get(chain)
+            atoms_to_align = \
+                ref_traj.topology.select("chainid {} and name CA"
+                                         .format(chain_id))
+            atoms_align_chains.append(atoms_to_align)
+        return np.concatenate(atoms_align_chains)   
+
+    def align(self, query_structure, ref_traj, atoms_to_align_ref, chains,
+              remove = True):
+        """
+        It aligns a structure using MdTraj implementation. 
+
+        Parameters
+        ----------
+        query_structure : str
+            Path to the PDB of the structure to align.
+        ref_traj : mdtraj.Trajectory object
+            Reference trajectory. 
+        atoms_to_align_ref : list
+            List of atoms to align to.
+        chains : list 
+            List of chains ids to align the structure. 
+        remove : bool
+            True if you want to remove the unaligned structure.
+        """
+        
+        # Atoms to align 
+        atoms_to_align_query = self._get_atoms_to_align(query_structure, chains)
+        
+        # Superposition of selected chains
+        query_traj = md.load(query_structure)
+        for chain in chains: 
+            chain_id = 
+        atoms_to_align_query = \
+            query_traj.topology.select("chainid 0 and name CA")
+        query_traj.superpose(ref_traj,
+                             atom_indices = atoms_to_align_query,
+                             ref_atom_indices = atoms_to_align_ref)
+        output_path = query_structure.replace('.pdb', '_align.pdb')
+
+        # Export alignes structure
+        query_traj.save(output_path)
+        if remove: 
+            os.remove(query_structure)
+
+    def run_aligment(self, path, chains, n_proc = 1):
+        """
+        It iterates (in parallel) over all the structures and aligns them to a 
+        reference (only the selected chains) structure. 
+
+        Parameters
+        ----------
+        path : str 
+            Path to the folder to align its structures. 
+        chains : list 
+            List of chains to align. 
+        n_proc : int
+            Number of processors. 
+        """
+        files = [os.path.join(path, file) for file in 
+                 os.listdir(path) if file.endswith('.pdb')]
+ 
+        # Get reference atoms to align
+        atoms_to_align_ref = self._get_atoms_to_align(self.pdb_ref,
+                                                      self.chains_ref)
+
+        # Function to be parallelized
+        align_structures_paral = partial(align_structures,
+            ref_traj = md.load(self.pdb_ref),
+            atoms_to_align_ref = atoms_to_align_ref, chains = chains)
+        
+        with Pool(args.n_proc) as p:
+            list(p.imap(align_structures_paral, files))

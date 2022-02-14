@@ -1,166 +1,150 @@
-# General imports
-from multiprocessing import Pool, Array
-from functools import partial
-import os
-import numpy as np
 import pandas as pd
-import scipy.spatial as spatial
-from biopandas.pdb import PandasPdb
-import linecache
+import logging
+import sys
 
 
-class Encoder(object):
-    def __init__(self, docking_program, chain, working_dir='.'):
-        self.docking_program = docking_program.lower()
-        self.chain = chain
-        self.working_dir = working_dir
+logging.basicConfig(format='%(asctime)s [%(module)s] - %(levelname)s: %(message)s',  datefmt='%d-%b-%y %H:%M:%S',
+                    level=logging.INFO, stream=sys.stdout)
 
-    def get_most_dist_points(self, data, K, MAX_LOOPS=20):
+
+class Encoding(object):
+    """Encoding object"""
+    def __init__(self):
         """
-        It gets the K most distance points of a given set of coordinates.
+        It initializes a ParserEncoding object.
+        """
+        self.df = None
 
+
+    def from_csv(self, encoding_file):
+        self.df = pd.read_csv(encoding_file, header=0)
+
+
+    def from_dataframe(self, df):
+        self.df = df
+
+
+    def __add_program_col(self):
+        """
+        Adds a column to self.df with the name of the program (based on the ids column) that obtained that pose.
+        """
+        self.df['program'] = self.df['ids'].str.split('_').str[0]
+
+    @staticmethod
+    def __flatten_list(lst):
+        """
+        Turns multidimensional list in a 1D list.
         Parameters
         ----------
-        data : np.array
-            Set of coordinates 
-        K : int
-            Number of points to return
-        MAX_LOOPS : int
-            Maximum number of loops in the algorithm. 
+        lst : list
+            List to be flatten
 
         Returns
         -------
-        indices : np.array
-            Indices of the K most distance points.
+        Flattened list
         """
+        from itertools import chain
+        return list(chain.from_iterable(lst))
 
-        def distances(ndarray_0, ndarray_1):
-            """
-            It computes the distance between two arrays of coordinates. 
-
-            Parameters
-            ----------
-            ndarray_0 : np.array
-                Array 1
-            ndarray_1 : np.array
-                Array 2
-            """
-            if (ndarray_0.ndim, ndarray_1.ndim) not in ((1, 2), (2, 1)):
-                raise ValueError("bad ndarray dimensions combination")
-            return np.linalg.norm(ndarray_0 - ndarray_1, axis=1)
-
-        # N = data.shape[0]
-        # ND = data.shape[1]
-        indices = np.argsort(distances(data, data.mean(0)))[:K].copy()
-        distsums = spatial.distance.cdist(data, data[indices]).sum(1)
-        distsums[indices] = -np.inf
-        prev_sum = 0.0
-        for loop in range(MAX_LOOPS):
-            for i in range(K):
-                old_index = indices[i]
-                distsums[old_index] = \
-                    distances(data[indices], data[old_index]).sum()
-                distsums -= distances(data, data[old_index])
-                new_index = np.argmax(distsums)
-                indices[i] = new_index
-                distsums[new_index] = -np.inf
-                distsums += distances(data, data[new_index])
-            curr_sum = spatial.distance.pdist(data[indices]).sum()
-            if curr_sum == prev_sum:
-                break
-            prev_sum = curr_sum
-        return indices
-
-    def get_3points_lines(self, pdb, chain):
+    @staticmethod
+    def __select_df_col(df, selected_columns):
         """
-        For a given PDB and a chain ID it computes the three most distance CA. 
-
+        Verifies if the selected_columns belong to the input DataFrames.columns and raises an error if they don't belong
+        to DataFrames.columns, otherwise, it selects selected_columns and returns the filtered DataFrame.
         Parameters
         ----------
-        pdb : str
-            Path to the PDB. 
-        chain : str
-            Chain ID. 
+        df : pandas DataFrame
+
+        selected_columns : list
+            List with the names of the columns we want to select.
 
         Returns
         -------
-        df : pandas.dataframe
-            DataFrame with the 3 CA selected.
+        pandas DataFrame with the desired columns.
         """
-        pdb_path = os.path.join(self.working_dir, self.docking_program, pdb)
-        ppdb = PandasPdb().read_pdb(pdb_path)
-        df = ppdb.df['ATOM'][ppdb.df['ATOM']['atom_name'] == 'CA'][ppdb.df['ATOM']['chain_id'] == chain]
-        coords = df[['x_coord', 'y_coord', 'z_coord']].values
-        dist_atoms = self.get_most_dist_points(coords, K=3)
-        return df.iloc[dist_atoms]
+        if set(selected_columns).issubset(df.columns):
+            return df[selected_columns]
+        else:
+            raise KeyError(
+                f'Your selected column names ({selected_columns}) mismatch with the ones in the DataFrame'
+                f' ({df.columns}).')
 
-    def encode_file(self, file_name, atom_lines):
-        try:
-            # l = count = 0
-            df = pd.DataFrame(columns=('x', 'y', 'z'))
-            for q, l in enumerate(atom_lines):
-                line = linecache.getline(file_name[1], l + 1)
-                df.loc[q] = [line[30:38], line[38:46], line[46:54]]
-            array[file_name[0], 2:] = df.values.flatten()
-            linecache.clearcache()
-            # print(array[file_name[0], :])
-        except Exception as e:
-            print(e)
-            pass
-
-    def run_encoding(self, output, norm_score_file=None, n_proc=1):
+    def get_columns_by_name(self, selected_columns):
         """
+        Parses the encoding csv file and returns a DataFrame with the selected columns.
+        Parameters
+        ----------
+        selected_columns : list
+            List with the names of the columns we want to select.
 
+        Returns
+        -------
+        pandas DataFrame with the desired columns.
         """
-        global array
+        if self.df is None:
+            logging.error("No data was found in encoding_object.df. Make sure to get the encoding data from either"
+                          " csv or pandas DataFrame.")
+            raise TypeError("You first have to parser the encoding using from_csv or from_df methods.")
+        return self.__select_df_col(self.df, selected_columns)
 
-        def init_arr(array):
-            globals()['array'] = np.frombuffer(array, dtype='float').reshape(len(file_paths), 11)
+    def get_coord(self):
+        """
+        Gets the coordinate columns and returns them.
 
-        # Initialize array 
-        file_paths = [f'{os.path.join(self.working_dir, self.docking_program, f)}'
-                      for f in os.listdir(os.path.join(self.working_dir, self.docking_program))
-                      if f.endswith(".pdb")]
-        file_names = [f'{os.path.splitext(f)[0]}'
-                      for f in os.listdir(os.path.join(self.working_dir, self.docking_program))
-                      if f.endswith(".pdb")]
+        Returns
+        -------
+        pandas DataFrame with the coordinate columns.
+        """
+        selected_columns = ['x1', 'y1', 'z1', 'x2', 'y2', 'z2', 'x3', 'y3', 'z3']
+        if self.df is None:
+            logging.error("No data was found in encoding_object.df. Make sure to get the encoding data from either"
+                          " csv or pandas DataFrame.")
+            raise TypeError("You first have to parser the encoding using from_csv or from_df methods.")
+        return self.__select_df_col(self.df, selected_columns)
 
-        array = Array('d', np.zeros((len(file_paths) * 11)), lock=False)
+    def get_coord_norm_sc(self):
+        """
+        Gets the coordinate and norm_score columns and returns them.
 
-        # Get reference for points
-        i, j, k = self.get_3points_lines(file_paths[0], self.chain)['line_idx'].values
+        Returns
+        -------
+        pandas DataFrame with the coordinate and norm_score columns.
+        """
+        selected_columns = ['norm_score', 'x1', 'y1', 'z1', 'x2', 'y2', 'z2', 'x3', 'y3', 'z3']
+        if self.df is None:
+            logging.error("No data was found in encoding_object.df. Make sure to get the encoding data from either"
+                          " csv or pandas DataFrame.")
+            raise TypeError("You first have to parser the encoding using from_csv or from_df methods.")
+        return self.__select_df_col(self.df, selected_columns)
 
-        # Encoding
-        encode_file_paral = partial(self.encode_file,
-                                    atom_lines=[i, j, k])
+    def get_ids(self):
+        """
+        Gets the ids column and returns it.
 
-        Pool(n_proc, initializer=init_arr, initargs=(array,)).map(
-            encode_file_paral, enumerate(file_paths))
+        Returns
+        -------
+        pandas DataFrame with the coordinate and norm_score columns.
+        """
+        selected_columns = ['ids']
+        if self.df is None:
+            logging.error("No data was found in encoding_object.df. Make sure to get the encoding data from either"
+                          " csv or pandas DataFrame.")
+            raise TypeError("You first have to parser the encoding using from_csv or from_df methods.")
+        return self.__select_df_col(self.df, selected_columns)
 
-        # Write out results
-        result = np.frombuffer(array, dtype=float).reshape(len(file_paths), 11)
-        df_result = pd.DataFrame(result.astype(str),
-                                 columns=['ids', 'norm_score', 'x1', 'y1', 'z1', 'x2', 'y2', 'z2', 'x3', 'y3', 'z3'])
+    def get_ids_by_row(self, index_list):
+        """
+        Returns list that has that follows the same order that appears in index_list
+        """
+        ids_df = self.get_ids()
+        out_df = ids_df.iloc[index_list]
+        out_list = out_df.values.tolist()
+        return self.__flatten_list(out_list)
 
-        if norm_score_file is None or not os.path.exists(norm_score_file):
-            if norm_score_file is None:
-                print(f'WARNING: norm_score path was NOT specified, so energies won\'t be added to {output}')
-            elif not os.path.exists(norm_score_file):
-                print(f'WARNING: {norm_score_file} was NOT FOUND, so energies won\'t be added to {output}')
-            for i, row in df_result.iterrows():
-                encoding_id = file_names[i]
-                df_result.at[i, 'ids'] = encoding_id
-
-        elif norm_score_file is not None:
-            df_score = pd.read_csv(norm_score_file)
-            score_ids = df_score.ids.to_list()
-            for i, row in df_result.iterrows():
-                encoding_id = file_names[i]
-                df_result.at[i, 'ids'] = encoding_id
-                if encoding_id in score_ids:
-                    df_result.at[i, 'norm_score'] = float(df_score[df_score.ids == encoding_id].norm_score)
-                else:
-                    print(f'WARNING: No ids from norm_score coincided with file: {file_names[i]}. Setting 0 value')
-            print('WARNING: If you haven\'t changed the file names of your PDBs to `program_num.pdb`, norm_score '
-                  'column will be set to 0.')
-        df_result.to_csv(output, index=False)
+    def get_program_weights(self):
+        #TODO alguna funcio que ponderi tenint en compte quantes poses te cada programa
+        # (per exemple)
+        # si ftdock te 10k i zdock te 2k --> les poses de ftdock valen 1 i les de zdock 5
+        # La idea seria fer que el que té mes estructures tingui pes 1 i la resta anar mutiplicant.
+        # Pero amb aquest approach s'hauria de controlar que es considera minim de poblacio (min_sample).
+        pass

@@ -1,6 +1,6 @@
 import argparse as ap
 import numpy as np
-from consensus_docking.clustering import Clustering
+from clustering import Clustering
 
 
 def parse_args():
