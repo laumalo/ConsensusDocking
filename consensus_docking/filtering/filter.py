@@ -2,7 +2,6 @@ import os
 import itertools
 import numpy as np
 from biopandas.pdb import PandasPdb
-import argparse as ap
 from multiprocessing import Pool
 from functools import partial
 import mdtraj as md
@@ -89,10 +88,6 @@ class Filter(objet):
         cutoff : int
             Distance threshold (in A). 
 
-        Returns
-        -------
-        keep : bool
-            True if we keep the structure.
         """
         if file_to_parse.endswith('.pdb'):
             ppdb = PandasPdb().read_pdb(file_to_parse)
@@ -119,7 +114,15 @@ class Filter(objet):
 
     def run(self, filter_distance = 15, n_proc = 1):
         """
-        Filters using the patches predicted by MaSIF-site all the poses fetched. 
+        Filters the structures fetched with the filtering criteria (list of CA)
+        of the two proteins to be under a certain filtering distance.
+
+        Parameters
+        ----------
+        filter_distance : float
+            Filtering distance. 
+        n_proc : int
+            Number of processors to run it in parallel. 
         """
 
         d_proteinA = get_patches_CA(self.filter_receptor)
