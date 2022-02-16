@@ -69,9 +69,9 @@ class _Filter(object):
         topology : str
             Path to the topology file, if needed. 
         d_proteinA : dict
-            Dictionary with filtering atoms for protein A. 
+            Dictionary with filtering atoms sets for protein A. 
         d_proteinB : dict
-            Dictionary with filtering atoms for protein B. 
+            Dictionary with filtering atoms sets for protein B. 
         cutoff : int
             Distance threshold (in A). 
 
@@ -124,8 +124,7 @@ class _Filter(object):
         out_file = file_filtered.replace('.csv', '_filtered.csv')
         df_filtered.to_csv(output_file)
 
-    def run(self, d_proteinA, d_proteinB, filter_distance,
-            output , n_proc = 1):
+    def run(self, d_proteinA, d_proteinB, filter_distance, output , n_proc = 1):
         """
         Filters the structures fetched with the filtering criteria (list of CA)
         of the two proteins to be under a certain filtering distance.
@@ -133,9 +132,9 @@ class _Filter(object):
         Parameters
         ----------
         d_proteinA : dict
-            Dictionary with filtering atoms for protein A. 
+            Dictionary with filtering atoms sets for protein A. 
         d_proteinB : dict
-            Dictionary with filtering atoms for protein B. 
+            Dictionary with filtering atoms sets for protein B. 
         filter_distance : float
             Filtering distance. 
         output : str
@@ -216,7 +215,7 @@ class FilterMASIF(_Filter):
             d_residues[patch] = df[['residue_name', 'residue_number']].values
         return d_residues
 
-    def run_filtering(self, filter_distance = 15,
+    def run_filtering(self, filter_distance = 15, 
                       output = 'filtering_masif.csv', n_proc = 1): 
         """
         Filters the structures fetched with the filtering criteria (list of CA)
@@ -232,11 +231,11 @@ class FilterMASIF(_Filter):
             Number of processors to run it in parallel. Default: 1 
         """
         
-        d_proteinA = self._get_patches_CA(self.filter_receptor)
-        d_proteinB = self._get_patches_CA(self.filter_ligand)
+        d_patchA = self._get_patches_CA(self.filter_receptor)
+        d_patchB = self._get_patches_CA(self.filter_ligand)
         
-        self.run(d_proteinA = d_proteinA, 
-                 d_proteinB = d_proteinB, 
+        self.run(d_proteinA = d_patchA, 
+                 d_proteinB = d_patchB, 
                  filter_distance = filter_distance, 
                  output = output, 
                  n_proc = n_proc)

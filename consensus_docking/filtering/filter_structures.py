@@ -40,145 +40,16 @@ def parse_args():
     parsed_args = parser.parse_args()
     return parsed_args
 
-def get_patches_CA(folder):
-    """
-    Given a folder with the different patches, it parses the information of the 
-    different patches into a dictionary. 
-
-    Parameters
-    ----------
-    folder : str
-        Path to the patches folder. 
-
-    Returns
-    -------
-    d_residues : dict
-        Dictionary with the residue information for each patch. 
-    """
-    patches_path = os.listdir(folder)
-    d_residues = {}
-    for patch in patches_path: 
-        path = os.path.join(folder, patch)
-        ppdb = PandasPdb().read_pdb(path)
-        df = ppdb.df['ATOM']
-        d_residues[patch] = df[['residue_name', 'residue_number']].values
-    return d_residues
-
-def get_coords_CA(ppdb, chain, residue_name, residue_number):
-    """
-    It returns the coordinates of the CA given its residue information.
-
-    Parameters
-    ----------
-    ppdb : biopandas.pdb.pandas_pdb.PandasPdb object
-        PDB structure. 
-    chain : str
-        Chain Id. 
-    residue_name : str
-        Residue name. 
-    residue_number : 
-        Residue number. 
-
-    Returns
-    -------
-    coords : list
-        CA coordinates. 
-    """
-    df =  ppdb.df['ATOM'][ppdb.df['ATOM']['chain_id'] == chain] \
-          [ppdb.df['ATOM']['atom_name'] == 'CA'][ppdb.df['ATOM'] \
-          ['residue_name'] == residue_name] \
-          [ppdb.df['ATOM']['residue_number'] == residue_number]
-    return df[['x_coord', 'y_coord', 'z_coord']].values
-    
-def distances(ndarray_0, ndarray_1):
-    """
-    It computes the distance between two arrays of coordinates. 
-
-    Parameters
-    ----------
-    ndarray_0 : np.array
-        Array 1
-    ndarray_1 : np.array
-        Array 2
-    """
-    if (ndarray_0.ndim, ndarray_1.ndim) not in ((1, 2), (2, 1)):
-        raise ValueError("bad ndarray dimensions combination")
-    return np.linalg.norm(ndarray_0 - ndarray_1, axis=1)
-
-def filter_structure(file_to_parse, topology, 
-                     d_proteinA, d_proteinB, cutoff):
-    
-    """
-    Checks if the given structure is between the filtering criteria.
-
-    Parameters
-    ----------
-    file_to_parse : str
-        Path to the structure's file.
-    topology : str
-        Path to the topology file, if needed. 
-    d_proteinA : dict
-        Dictionary with patches for protein A. 
-    d_proteinB : dict
-        Dictionary with patches for protein B. 
-    cutoff : int
-        Distance threshold (in A). 
-
-    Returns
-    -------
-    keep : bool
-        True if we keep the structure.
-    """
-    if file_to_parse.endswith('.pdb'):
-        ppdb = PandasPdb().read_pdb(file_to_parse)
-
-    if file_to_parse.endswith('xtc'):
-        m = md.load(file_to_parse, top = topology)
-        
-        with tempfile.NamedTemporaryFile(suffix='.pdb') as tmp:
-            m.save(tmp.name)
-            ppdb = PandasPdb().read_pdb(tmp.name)
-
-    for patchA, patchB in list(itertools.product(d_proteinA, d_proteinB)): 
-        residues_proteinA = d_proteinA[patchA]
-        residues_proteinB = d_proteinB[patchB]
-        l1 = [get_coords_CA(ppdb, 'A', residue[0], residue[1]) 
-              for residue in residues_proteinA]
-        l2 = [get_coords_CA(ppdb, 'C', residue[0], residue[1]) 
-              for residue in residues_proteinB]
-        
-        value = min(np.linalg.norm(l1_element - l2_element) 
-                    for l1_element,l2_element in itertools.product(l1,l2))
-        if value < cutoff:
-            print(os.path.basename(file_to_parse), value)
-
-
-
 def main(args):
     """
     Filters using the patches predicted by MaSIF-site all the poses fetched. 
     """
-
-    d_proteinA = get_patches_CA(args.patches_receptor)
-    d_proteinB = get_patches_CA(args.patches_ligand)
-    
-    files_pdb = [os.path.join(args.path, file) for file in os.listdir(args.path)
-                 if file.endswith('pdb')]
-
-    files_xtc = [os.path.join(args.path, file) for file in os.listdir(args.path)
-                 if file.endswith('xtc')]
-
-    files = files_xtc if bool(files_xtc) else files_pdb
-    topology = files_pdb[0] if bool(files_xtc) else None
-
-    filter_structure_paral = partial(filter_structure, 
-                                     topology = topology,
-                                     d_proteinA = d_proteinA, 
-                                     d_proteinB = d_proteinB, 
-                                     cutoff = args.filter)
-
-    with Pool(args.n_proc) as p:
-        list(p.imap(filter_structure_paral, files))
+    from consensus_docking.filtering import FilterMASIF
+    masif_filter = FilterMASIF(path = args.path,
+                               filter_receptor = args.patches_receptor,
+                               filter_ligand = args.patches_ligand)
+    masif_filter.run_filtering(filter_distance = args.filter, 
+                               n_proc = args.n_proc)
 
 if __name__ == '__main__':
     args = parse_args()
