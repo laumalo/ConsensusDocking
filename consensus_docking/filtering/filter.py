@@ -11,38 +11,25 @@ import logging
 logging.getLogger().setLevel(logging.INFO)
 
 
-class Filter(objet): 
-    def __init__(self, path, filter_receptor,  filter_ligand): 
-        self.path = path
-        self.filter_receptor = filter_receptor
-        self.filter_ligand = filter_ligand
+class _Filter(object): 
+    """ 
+    It is the Filter base class
+    """
+    _filtering_method = ''
 
-
-    def get_patches_CA(self, folder):
+    def __init__(self): 
         """
-        Given a folder with the different patches, it parses the information 
-        of the different patches into a dictionary. 
+        It initialicesthe base Filter class. 
 
         Parameters
         ----------
-        folder : str
-            Path to the patches folder. 
-
-        Returns
-        -------
-        d_residues : dict
-            Dictionary with the residue information for each patch. 
+        path : str
+            Path to the folder containing the structures to filter.
         """
-        patches_path = os.listdir(folder)
-        d_residues = {}
-        for patch in patches_path: 
-            path = os.path.join(folder, patch)
-            ppdb = PandasPdb().read_pdb(path)
-            df = ppdb.df['ATOM']
-            d_residues[patch] = df[['residue_name', 'residue_number']].values
-        return d_residues
+        
+        self.filtered_structures = None
 
-    def get_coords_CA(self, ppdb, chain, residue_name, residue_number):
+    def _get_coords_CA(self, ppdb, chain, residue_name, residue_number):
         """
         It returns the coordinates of the CA given its residue information.
 
@@ -82,9 +69,9 @@ class Filter(objet):
         topology : str
             Path to the topology file, if needed. 
         d_proteinA : dict
-            Dictionary with patches for protein A. 
+            Dictionary with filtering atoms for protein A. 
         d_proteinB : dict
-            Dictionary with patches for protein B. 
+            Dictionary with filtering atoms for protein B. 
         cutoff : int
             Distance threshold (in A). 
 
@@ -100,33 +87,62 @@ class Filter(objet):
                 ppdb = PandasPdb().read_pdb(tmp.name)
 
         for patchA, patchB in list(itertools.product(d_proteinA, d_proteinB)): 
-            l1 = [get_coords_CA(ppdb, 'A', residue[0], residue[1]) 
+            l1 = [self._get_coords_CA(ppdb, 'A', residue[0], residue[1]) 
                   for residue in d_proteinA[patchA]]
-            l2 = [get_coords_CA(ppdb, 'C', residue[0], residue[1]) 
+            l2 = [self._get_coords_CA(ppdb, 'C', residue[0], residue[1]) 
                   for residue in d_proteinB[patchB]]
             
             value = min(np.linalg.norm(l1_element - l2_element) 
                         for l1_element,l2_element in itertools.product(l1,l2))
             if value < cutoff:
-                print(os.path.basename(file_to_parse), value)
+                return os.path.basename(file_to_parse), value
 
 
+    def filter_encoding_file(self, encoding_file, file_filtered = None): 
+        """
+        Given an encoding file, it filteres the encoding based on a list of 
+        structures and generated a new encoding file. 
 
-    def run(self, filter_distance = 15, n_proc = 1):
+        Parameters
+        ----------
+        encoding_file : str
+            Path to the encoding file. 
+        file_filtered : str
+            Path to a file containing the list of filtered structures. 
+        """
+        if file_filtered:
+            with open(file_filtered, 'r') as f: 
+                lines = f.readlines()
+                filtered_structures = [line.replace('\n', '') 
+                                       for line in lines if not 'gpfs' in line]
+        else: 
+            filtered_structures = self.filtered_structures
+
+        df_encoding = pd.read_csv(encoding_file)
+        df_filtered = df[df['File'].isin(filtered_structures)]
+
+        out_file = file_filtered.replace('.csv', '_filtered.csv')
+        df_filtered.to_csv(output_file)
+
+    def run(self, d_proteinA, d_proteinB, filter_distance,
+            output , n_proc = 1):
         """
         Filters the structures fetched with the filtering criteria (list of CA)
         of the two proteins to be under a certain filtering distance.
 
         Parameters
         ----------
+        d_proteinA : dict
+            Dictionary with filtering atoms for protein A. 
+        d_proteinB : dict
+            Dictionary with filtering atoms for protein B. 
         filter_distance : float
             Filtering distance. 
+        output : str
+            Path to output file.
         n_proc : int
             Number of processors to run it in parallel. 
         """
-
-        d_proteinA = get_patches_CA(self.filter_receptor)
-        d_proteinB = get_patches_CA(self.filter_ligand)
         
         files_pdb = [os.path.join(self.path, file) 
                      for file in os.listdir(self.path) if file.endswith('pdb')]
@@ -144,4 +160,83 @@ class Filter(objet):
                                          cutoff = filter_distance)
 
         with Pool(n_proc) as p:
-            list(p.imap(filter_structure_paral, files))
+            self.filtered_structure = p.map(filter_structure_paral, files)
+
+        with open(output, 'w') as f:
+            for structure in self.filtered_structure:
+                f.write("%s\n" % structure)
+
+
+class FilterMASIF(_Filter): 
+    """
+    It defines a MaSIF filtering. 
+    """
+    _filtering_method = 'MASIF'
+    
+    def __init__(self, path, filter_receptor,  filter_ligand):
+        """
+        It initializes the FilterMASIF class.
+
+        Parameters
+        ----------
+        path : str
+            Path to the folder containing structures to be filtered. 
+        filter_receptor : str
+            Path to the patches for the receptor protein. 
+        filter_ligand : str
+            Path to the patches for the ligand protein.             
+        """
+
+        self.filter_receptor = filter_receptor
+        self.filter_ligand = filter_ligand
+        
+        super().__init__(self._filtering_method)
+
+    def _get_patches_CA(self, folder):
+        """
+        Given a folder with the different patches, it parses the information 
+        of the different patches into a dictionary. 
+
+        Parameters
+        ----------
+        folder : str
+            Path to the patches folder. 
+
+        Returns
+        -------
+        d_residues : dict
+            Dictionary with the residue information for each patch. 
+        """
+        patches_path = os.listdir(folder)
+        d_residues = {}
+        for patch in patches_path: 
+            path = os.path.join(folder, patch)
+            ppdb = PandasPdb().read_pdb(path)
+            df = ppdb.df['ATOM']
+            d_residues[patch] = df[['residue_name', 'residue_number']].values
+        return d_residues
+
+    def run_filtering(self, filter_distance = 15,
+                      output = 'filtering_masif.csv', n_proc = 1): 
+        """
+        Filters the structures fetched with the filtering criteria (list of CA)
+        of the two proteins to be under a certain filtering distance.
+
+        Parameters
+        ----------
+        filter_distance : float
+            Filtering distance. Default: 15 A
+        output : str
+            Path to output file. Default: filtering_masif.csv
+        n_proc : int
+            Number of processors to run it in parallel. Default: 1 
+        """
+        
+        d_proteinA = self._get_patches_CA(self.filter_receptor)
+        d_proteinB = self._get_patches_CA(self.filter_ligand)
+        
+        self.run(d_proteinA = d_proteinA, 
+                 d_proteinB = d_proteinB, 
+                 filter_distance = filter_distance, 
+                 output = output, 
+                 n_proc = n_proc)
