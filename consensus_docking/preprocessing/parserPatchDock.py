@@ -1,6 +1,11 @@
 import os
+import sys
+import logging
 import pandas as pd
 import numpy as np
+
+logging.basicConfig(format='%(asctime)s [%(module)s] - %(levelname)s: %(message)s', datefmt='%d-%b-%y %H:%M:%S',
+                    level=logging.INFO, stream=sys.stdout)
 
 
 class ParserPatchDock:
