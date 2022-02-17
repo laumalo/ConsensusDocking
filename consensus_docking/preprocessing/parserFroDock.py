@@ -26,7 +26,7 @@ class ParserFroDock:
         self.df = None
 
     @staticmethod
-    def __find_starting_line(file_name):
+    def __find_starting_line(scoring_file_path):
         """
         It finds the line number in which the comment section ends, which indicates the beginning of the scoring section.
         Parameters
@@ -39,7 +39,7 @@ class ParserFroDock:
         n : int
             Line number in which the comment section ends in the scoring file.
         """
-        with open(file_name) as f:
+        with open(scoring_file_path) as f:
             for n, line in enumerate(f):
                 if n == 0 and line.startswith('More solutions requested'):
                     return [0]
