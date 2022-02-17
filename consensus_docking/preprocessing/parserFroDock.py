@@ -84,7 +84,7 @@ class ParserFroDock:
         self.__norm_ids()
         self.__sort_by_norm_score()
 
-    def save(self, output_path):
+    def save(self, output_folder):
         """
         It saves the normalized ids, the original score and the normalized score from self.df after being normalized
         to a csv file.
@@ -94,5 +94,5 @@ class ParserFroDock:
         if 'norm_score' not in self.df.columns:
             message = "You must normalize (sc_parser.norm()) before saving the csv with the normalized score."
             raise AttributeError(message)
-        norm_score_file_path = os.path.join(output_path, self.norm_score_filename)
+        norm_score_file_path = os.path.join(output_folder, self.norm_score_filename)
         self.df.to_csv(norm_score_file_path, columns=columns_to_save, header=header_names, index=False)
