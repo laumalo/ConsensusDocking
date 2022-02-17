@@ -22,7 +22,7 @@ class ParserPatchDock:
         self.working_dir = working_dir
         self.program = 'patchdock'
         self.score_filename = score_filename
-        self.norm_score_filename = 'norm_score.csv'
+        self.norm_score_filename = f'{self.program}_norm_score.csv'
         self.df = None
 
     @staticmethod

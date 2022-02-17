@@ -22,7 +22,7 @@ class ParserLightDock:
         self.working_dir = working_dir
         self.program = 'lightdock'
         self.score_filename = score_filename
-        self.norm_score_filename = 'norm_score.csv'
+        self.norm_score_filename = f'{self.program}_norm_score.csv'
         self.df = None
 
     def __read_one_score_file(self, scoring_file_path):
