@@ -31,6 +31,7 @@ class ParserFTDock:
         """
         scoring_file_path = os.path.join(self.working_dir, self.program, self.score_filename)
         self.df = pd.read_csv(scoring_file_path, delimiter='\s+', skiprows=[1])
+        logging.debug(f"Scoring file read {scoring_file_path}: \n {self.df} ")
 
     def __norm_scores(self):
         """
@@ -39,6 +40,7 @@ class ParserFTDock:
         """
         scores = np.array(self.df.Total)
         self.df['norm_score'] = abs((scores - np.max(scores))) / (np.max(scores) - np.min(scores))
+        logging.debug(f"Normalizing scores using: |scores - {np.max(scores)} / ( {np.max(scores)} - {np.min(scores)})|")
 
     def __norm_ids(self):
         """

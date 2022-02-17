@@ -55,6 +55,7 @@ class ParserPatchDock:
                        'cluster', 'dist.', 'empty', 'Ligand Transformation']
         self.df = pd.read_csv(scoring_file_path, delimiter='\s*\|', skiprows=skip_rows, header=None,
                               names=header_list).drop(columns='empty')
+        logging.debug(f"Scoring file read {scoring_file_path}: \n {self.df} ")
 
     def __norm_scores(self):
         """
@@ -63,6 +64,7 @@ class ParserPatchDock:
         """
         scores = np.array(self.df.score)
         self.df['norm_score'] = abs((scores - np.min(scores))) / (np.max(scores) - np.min(scores))
+        logging.debug(f"Normalizing scores using: scores - {np.min(scores)} / ( {np.max(scores)} - {np.min(scores)})")
 
     def __norm_ids(self):
         """

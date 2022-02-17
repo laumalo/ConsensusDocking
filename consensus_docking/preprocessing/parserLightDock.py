@@ -61,6 +61,7 @@ class ParserLightDock:
             dfsc = self.__read_one_score_file(sc)
             dfsc_list.append(dfsc)
         self.df = pd.concat(dfsc_list)
+        logging.debug(f"Scoring files read {scoring_files}: \n {self.df} ")
 
     def __norm_scores(self):
         """
@@ -69,6 +70,7 @@ class ParserLightDock:
         """
         scores = np.array(pd.to_numeric(self.df.Scoring))
         self.df['norm_score'] = abs((scores - np.min(scores))) / (np.max(scores) - np.min(scores))
+        logging.debug(f"Normalizing scores using: scores - {np.min(scores)} / ( {np.max(scores)} - {np.min(scores)})")
 
     def __norm_ids(self):
         """

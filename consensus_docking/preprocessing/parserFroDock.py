@@ -55,6 +55,7 @@ class ParserFroDock:
         # skip_rows = [i for i in range(n+2)]
         header_list = ['rank_id', 'Euler1', 'Euler2', 'Euler3', 'posX', 'posY', 'PosZ', 'correlation']
         self.df = pd.read_csv(scoring_file_path, delimiter='\s+', skiprows=skip_rows, header=None, names=header_list)
+        logging.debug(f"Scoring file read {scoring_file_path}: \n {self.df} ")
 
     def __norm_scores(self):
         """
@@ -63,6 +64,7 @@ class ParserFroDock:
         """
         scores = np.array(self.df.correlation)
         self.df['norm_score'] = abs((scores - np.min(scores))) / (np.max(scores) - np.min(scores))
+        logging.debug(f"Normalizing scores using: |scores - {np.min(scores)} / ( {np.max(scores)} - {np.min(scores)})|")
 
     def __norm_ids(self):
         """

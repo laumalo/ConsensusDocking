@@ -32,6 +32,7 @@ class ParserPiper:
         header_list = ['rot_index', 'x_trans', 'y_trans', 'z_trans', 'total_score', 'repulsive_vdw', 'attractive_vdw',
                        'coulomb_elect', 'born_approx_elect', 'pairwise_potential']
         self.df = pd.read_csv(scoring_file_path, delimiter='\s+', header=None, names=header_list)
+        logging.debug(f"Scoring file read {scoring_file_path}: \n {self.df} ")
 
     def __norm_scores(self):
         """
@@ -40,6 +41,7 @@ class ParserPiper:
         """
         scores = np.array(self.df.total_score)
         self.df['norm_score'] = abs((scores - np.max(scores))) / (np.max(scores) - np.min(scores))
+        logging.debug(f"Normalizing scores using: scores - {np.max(scores)} / ( {np.max(scores)} - {np.min(scores)})")
 
     def __norm_ids(self):
         """
