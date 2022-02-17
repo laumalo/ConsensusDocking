@@ -19,11 +19,82 @@ class ParserZDock:
         score_filename : str
             Name of the score file.
         """
-        self.working_dir = working_dir
-        self.program = 'zdock'
-        self.score_filename = score_filename
-        self.norm_score_filename = f'{self.program}_norm_score.csv'
-        self.df = None
+        self._working_dir = working_dir
+        self._program = 'zdock'
+        self._score_filename = score_filename
+        self._norm_score_filename = f'{self.program}_norm_score.csv'
+        self._df = None
+
+    @property
+    def working_dir(self):
+        self._working_dir
+
+    @working_dir.setter
+    def working_dir(self, new_working_dir):
+        if isinstance(new_working_dir, str) and os.path.isdir(new_working_dir):
+            self._working_dir = new_working_dir
+        else:
+            logging.error(f"Please enter a valid working_dir that exists. Keeping {self.working_dir}")
+
+    @working_dir.getter
+    def working_dir(self):
+        return self._working_dir
+
+    @property
+    def program(self):
+        self._program
+
+    @program.getter
+    def program(self):
+        return self._program
+
+    @property
+    def score_filename(self):
+        self._score_filename
+
+    @score_filename.setter
+    def score_filename(self, new_score_filename):
+        folder_path = os.path.join(self.working_dir, self.program)
+        file_path = os.path.join(folder_path, new_score_filename)
+        if isinstance(new_score_filename, str) and os.path.exists(file_path):
+            self._score_filename = new_score_filename
+        else:
+            logging.error(f"Please enter a valid score_filename that exists in {folder_path}. "
+                          f"Keeping {self.score_filename}")
+
+    @score_filename.getter
+    def score_filename(self):
+        return self._score_filename
+
+    @property
+    def norm_score_filename(self):
+        self._norm_score_filename
+
+    @norm_score_filename.getter
+    def norm_score_filename(self):
+        return self._norm_score_filename
+
+    @property
+    def df(self):
+        self._df
+
+    @df.setter
+    def df(self, new_df):
+        if isinstance(new_df, pd.DataFrame):
+            self._df = new_df
+        else:
+            message = "Please enter a valid pd.DataFrame object. Keeping previous."
+            logging.error(message)
+            raise TypeError(message)
+
+    @df.getter
+    def df(self):
+        return self._df
+
+    @df.deleter
+    def df(self):
+        logging.warning("Removing df.")
+        del self._df
 
     def read(self):
         """
