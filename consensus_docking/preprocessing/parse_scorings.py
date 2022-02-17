@@ -1,5 +1,10 @@
 import argparse as ap
 from consensus_docking.preprocessing import Parser
+import logging
+import sys
+
+logging.basicConfig(format='%(asctime)s [%(module)s] - %(levelname)s: %(message)s', datefmt='%d-%b-%y %H:%M:%S',
+                    level=logging.INFO, stream=sys.stdout)
 
 
 def parse_args():
@@ -23,11 +28,13 @@ def parse_args():
                              "coma-separated list with the score filenames (in the same order!)")
     parser.add_argument("-w", "--w-dir", type=str,
                         help='Path to folder containing the folders of each program.', default='.')
+    parser.add_argument("-o", "--output-folder", type=str,
+                        help='Path to the output folder.', default='.')
     parsed_args = parser.parse_args()
     return parsed_args
 
 
-def parse_sc(working_dir, program, score_filename):
+def parse_sc(working_dir, program, score_filename, output_folder):
     """
     It parses the scoring file and generates a normalized file containing the pose id, the program score and the
     normalized score.
@@ -36,9 +43,10 @@ def parse_sc(working_dir, program, score_filename):
     working_dir
     program
     score_filename
+    output_folder
     """
     parser = Parser(program=program, score_filename=score_filename, working_dir=working_dir)
-    parser.run()
+    parser.run(output_folder)
 
 
 def main(args):
@@ -49,12 +57,14 @@ def main(args):
     input_programs = args.program.split(',')
     input_sc_filenames = args.score_filename.split(',')
     assert len(input_programs) == len(input_sc_filenames), "Program and Score filename arguments must have the same " \
-                                                          "number of items!"
+                                                           "number of items!"
     for i, program in enumerate(input_programs):
         if program.lower() in available_programs:
-            parse_sc(args.w_dir, program, input_sc_filenames[i])
+            parse_sc(args.w_dir, program, input_sc_filenames[i], args.output_folder)
         else:
-            print(f"Program {program} is still no available. Try with one of the followings: {available_programs}.")
+
+            logging.warning(f"Program {program} is still not available."
+                            f" Try with one of the following programs: {available_programs}.")
 
 
 if __name__ == '__main__':
