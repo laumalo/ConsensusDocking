@@ -59,6 +59,7 @@ class Parser:
             logging.error(f"Program {self.program} is still no available."
                           f" Try with one of the followings: {available_programs}.")
             raise NameError(f"Program {self.program} is still no available.")
+        self._norm_score_filename = self.parser.norm_score_filename
 
     @property
     def working_dir(self):
@@ -108,6 +109,14 @@ class Parser:
     @parser.getter
     def parser(self):
         return self._parser
+
+    @property
+    def norm_score_filename(self):
+        self._norm_score_filename
+
+    @norm_score_filename.getter
+    def norm_score_filename(self):
+        return self._norm_score_filename
 
     def run(self, output_folder):
         """Parses and normalizes scoring files"""
