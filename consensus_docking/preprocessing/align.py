@@ -1,14 +1,17 @@
 """
-This module containts all the methods related with the aligment of 
+This module contains all the methods related with the alignment of
 PDB structures.
 """
+from functools import partial
+from multiprocessing import Pool
 from biopandas.pdb import PandasPdb
 import numpy as np
 import scipy.spatial as spatial
 import torch 
-
+import mdtraj as md
 import logging
-import sys 
+import sys
+import os
 
 logging.basicConfig(format=
     '%(asctime)s [%(module)s] - %(levelname)s: %(message)s',
@@ -298,13 +301,11 @@ class Aligner(object):
         
         # Superposition of selected chains
         query_traj = md.load(query_structure)
-        for chain in chains: 
-            chain_id = 
-        atoms_to_align_query = \
-            query_traj.topology.select("chainid 0 and name CA")
-        query_traj.superpose(ref_traj,
-                             atom_indices = atoms_to_align_query,
-                             ref_atom_indices = atoms_to_align_ref)
+        # Commented to avoid Syntax error
+        #for chain in chains:
+        #    chain_id =
+        atoms_to_align_query = query_traj.topology.select("chainid 0 and name CA")
+        query_traj.superpose(ref_traj,atom_indices = atoms_to_align_query,ref_atom_indices = atoms_to_align_ref)
         output_path = query_structure.replace('.pdb', '_align.pdb')
 
         # Export alignes structure
@@ -334,9 +335,8 @@ class Aligner(object):
                                                       self.chains_ref)
 
         # Function to be parallelized
-        align_structures_paral = partial(align_structures,
-            ref_traj = md.load(self.pdb_ref),
-            atoms_to_align_ref = atoms_to_align_ref, chains = chains)
+        align_structures_paral = partial(align_structures, ref_traj = md.load(self.pdb_ref),
+                                         atoms_to_align_ref = atoms_to_align_ref, chains = chains)
         
         with Pool(args.n_proc) as p:
             list(p.imap(align_structures_paral, files))
