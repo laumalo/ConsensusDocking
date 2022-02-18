@@ -8,6 +8,8 @@ Dependences list:
 - sklearn
 - scipy
 - pytorch
+- more_itertools
+- pytest
 - py3dmol
 - matplotlib
 - seaborn
