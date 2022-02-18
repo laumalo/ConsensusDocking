@@ -1,3 +1,4 @@
+import os
 import pytest
 from consensus_docking.preprocessing import *
 
@@ -28,3 +29,15 @@ class TestParser:
         """
         with pytest.raises(Exception):
             Parser('dummy_program', 'score_file.sc')
+
+    def test_run_parser(self, tmp_path):
+        """
+        Verify that Parser returns a norm_score file that is not empty using
+        parserFTDock
+        """
+        p = Parser('ftdock', 'dock.ene', working_dir='../../data')
+        p.run(tmp_path)
+        norm_score_file_path = tmp_path / f'{p.norm_score_filename}'
+        assert os.path.getsize(norm_score_file_path) > 0
+
+
