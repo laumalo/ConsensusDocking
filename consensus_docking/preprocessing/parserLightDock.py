@@ -4,8 +4,10 @@ import logging
 import pandas as pd
 import numpy as np
 
-logging.basicConfig(format='%(asctime)s [%(module)s] - %(levelname)s: %(message)s', datefmt='%d-%b-%y %H:%M:%S',
-                    level=logging.INFO, stream=sys.stdout)
+logging.basicConfig(
+    format='%(asctime)s [%(module)s] - %(levelname)s: %(message)s',
+    datefmt='%d-%b-%y %H:%M:%S',
+    level=logging.INFO, stream=sys.stdout)
 
 
 class ParserLightDock:
@@ -34,7 +36,8 @@ class ParserLightDock:
         if isinstance(new_working_dir, str) and os.path.isdir(new_working_dir):
             self._working_dir = new_working_dir
         else:
-            logging.error(f"Please enter a valid working_dir that exists. Keeping {self.working_dir}")
+            logging.error(f"Please enter a valid working_dir that exists. "
+                          f"Keeping {self.working_dir}")
 
     @working_dir.getter
     def working_dir(self):
@@ -59,8 +62,8 @@ class ParserLightDock:
         if isinstance(new_score_filename, str) and os.path.exists(file_path):
             self._score_filename = new_score_filename
         else:
-            logging.error(f"Please enter a valid score_filename that exists in {folder_path}. "
-                          f"Keeping {self.score_filename}")
+            logging.error(f"Please enter a valid score_filename that exists "
+                          f"in {folder_path}. Keeping {self.score_filename}")
 
     @score_filename.getter
     def score_filename(self):
@@ -83,7 +86,8 @@ class ParserLightDock:
         if isinstance(new_df, pd.DataFrame):
             self._df = new_df
         else:
-            message = "Please enter a valid pd.DataFrame object. Keeping previous."
+            message = "Please enter a valid pd.DataFrame object. " \
+                      "Keeping previous."
             logging.error(message)
             raise TypeError(message)
 
@@ -107,11 +111,13 @@ class ParserLightDock:
         Returns
         -------
         df : Pandas.DataFrame
-            df containing the information in the scoring file and a column indicating to which swarm belongs the info.
+            df containing the information in the scoring file and a column
+            indicating to which swarm belongs the info.
         """
-        header_list = ['swarm', 'RecID', 'LigID', 'Luciferin', 'Neighbor_number', 'Vision_Range', 'Scoring']
-        df = pd.read_csv(scoring_file_path, skiprows=[0], header=None, delimiter=')', names=['c1', 'c2']).drop(
-            columns='c1')
+        header_list = ['swarm', 'RecID', 'LigID', 'Luciferin',
+                       'Neighbor_number', 'Vision_Range', 'Scoring']
+        df = pd.read_csv(scoring_file_path, skiprows=[0], header=None,
+                         delimiter=')', names=['c1', 'c2']).drop(columns='c1')
         df[header_list] = df['c2'].str.split(pat='\s+', expand=True)
         df = df.drop(columns=['c2'])
         swarm_start = scoring_file_path.find('swarm_')
@@ -121,12 +127,13 @@ class ParserLightDock:
 
     def read(self):
         """
-        It reads the scoring file and saves it to self.df. Note that it iterates over all the swarm folders that appear
-        in the `working_dir`/lightdock.
+        It reads the scoring file and saves it to self.df. Note that it iterates
+        over all the swarm folders that appear in the `working_dir`/lightdock.
         """
         path_ligthdock = os.path.join(self.working_dir, self.program)
-        scoring_files = [os.path.join(path_ligthdock, folder, self.score_filename) for folder in
-                         os.listdir(path_ligthdock) if folder.startswith('swarm_')]
+        scoring_files = [os.path.join(path_ligthdock, folder, self.score_filename)
+                         for folder in os.listdir(path_ligthdock)
+                         if folder.startswith('swarm_')]
         dfsc_list = []
         for sc in scoring_files:
             dfsc = self.__read_one_score_file(sc)
@@ -136,16 +143,21 @@ class ParserLightDock:
 
     def __norm_scores(self):
         """
-        It normalizes the score being 1 the best (the most positive) and 0 the worst (the most negative) and adds a new
-        column to self.df with the normalized score
+        It normalizes the score being 1 the best (the most positive) and 0 the
+        worst (the most negative) and adds a new column to self.df with the
+         normalized score
         """
         scores = np.array(pd.to_numeric(self.df.Scoring))
-        self.df['norm_score'] = abs((scores - np.min(scores))) / (np.max(scores) - np.min(scores))
-        logging.debug(f"Normalizing scores using: scores - {np.min(scores)} / ( {np.max(scores)} - {np.min(scores)})")
+        min_sc = np.min(scores)
+        max_sc = np.max(scores)
+        self.df['norm_score'] = abs((scores - min_sc)) / (max_sc - min_sc)
+        logging.debug(f"Normalizing scores using: scores - {min_sc} / "
+                      f"( {max_sc} - {min_sc})")
 
     def __norm_ids(self):
         """
-        It normalizes the ids names (program_ + id number) and adds a new column to self.df with the normalized ids.
+        It normalizes the ids names (program_ + id number) and adds a new column
+        to self.df with the normalized ids.
         """
         self.df['norm_ids'] = f'{self.program}_' + self.df.swarm + '_' + self.df.Scoring.map(str)
 
@@ -157,7 +169,8 @@ class ParserLightDock:
 
     def norm(self):
         """
-        It adds new columns to self.df normalizing scores and ids and finally sorts by norm_score in descending order.
+        It adds new columns to self.df normalizing scores and ids and finally
+        sorts by norm_score in descending order.
         """
         self.__norm_scores()
         self.__norm_ids()
@@ -165,13 +178,16 @@ class ParserLightDock:
 
     def save(self, output_folder):
         """
-        It saves the normalized ids, the original score and the normalized score from self.df after being normalized
-        to a csv file.
+        It saves the normalized ids, the original score and the normalized score
+        from self.df after being normalized to a csv file.
         """
         columns_to_save = ['norm_ids', 'Scoring', 'norm_score']
         header_names = ['ids', 'total_score', 'norm_score']
         if 'norm_score' not in self.df.columns:
-            message = "You must normalize (sc_parser.norm()) before saving the csv with the normalized score."
+            message = "You must normalize (sc_parser.norm()) before saving" \
+                      " the csv with the normalized score."
             raise AttributeError(message)
-        norm_score_file_path = os.path.join(output_folder, self.norm_score_filename)
-        self.df.to_csv(norm_score_file_path, columns=columns_to_save, header=header_names, index=False)
+        norm_score_file_path = os.path.join(output_folder,
+                                            self.norm_score_filename)
+        self.df.to_csv(norm_score_file_path, columns=columns_to_save,
+                       header=header_names, index=False)
