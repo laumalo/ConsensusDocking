@@ -21,9 +21,11 @@ class ParserFTDock:
         score_filename : str
             Name of the score file.
         """
-        self._working_dir = working_dir
+        self._working_dir = None
+        self.working_dir = working_dir
         self._program = 'ftdock'
-        self._score_filename = score_filename
+        self._score_filename = None
+        self.score_filename = score_filename
         self._norm_score_filename = f'{self.program}_norm_score.csv'
         self._df = None
 
@@ -38,6 +40,8 @@ class ParserFTDock:
         else:
             logging.error(f"Please enter a valid working_dir that exists. "
                           f"Keeping {self.working_dir}")
+            raise FileNotFoundError("The following directory has not been "
+                                    f"found: {new_working_dir}")
 
     @working_dir.getter
     def working_dir(self):
@@ -64,6 +68,7 @@ class ParserFTDock:
         else:
             logging.error(f"Please enter a valid score_filename that exists "
                           f"in {folder_path}. Keeping {self.score_filename}")
+            raise FileNotFoundError(f"File not found in {file_path}")
 
     @score_filename.getter
     def score_filename(self):
@@ -106,7 +111,16 @@ class ParserFTDock:
         """
         scoring_file_path = os.path.join(self.working_dir, self.program,
                                          self.score_filename)
-        self.df = pd.read_csv(scoring_file_path, delimiter='\s+', skiprows=[1])
+
+        df = pd.read_csv(scoring_file_path, delim_whitespace=True, skiprows=[1])
+        col_df = df.columns
+        col_expected = ['Conf', 'Ele', 'Desolv', 'VDW', 'Total', 'RMSD', 'RANK']
+        for col in col_df:
+            if col not in col_expected:
+                logging.error("Invalid FTDock scoring file.")
+                raise AssertionError(f"Invalid FTDock scoring file. Column"
+                                     f" {col} is not expected")
+        self.df = df
         logging.debug(f"Scoring file read {scoring_file_path}: \n {self.df} ")
 
     def __norm_scores(self):
@@ -153,9 +167,9 @@ class ParserFTDock:
         columns_to_save = ['norm_ids', 'Total', 'norm_score']
         header_names = ['ids', 'total_score', 'norm_score']
         if 'norm_score' not in self.df.columns:
-            message = "You must normalize (sc_parser.norm()) before saving the" \
-                      " csv with the normalized score."
-            raise AttributeError(message)
+            message = "You must normalize (sc_parser.norm()) before saving " \
+                      "the csv with the normalized score."
+            raise AssertionError(message)
         norm_score_file_path = os.path.join(output_folder,
                                             self.norm_score_filename)
         self.df.to_csv(norm_score_file_path, columns=columns_to_save,
