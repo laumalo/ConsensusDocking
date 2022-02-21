@@ -24,9 +24,11 @@ class Parser:
         working_dir : str
             Path to the folder containing all the folders for each program.
         """
-        self._working_dir = working_dir
+        self._working_dir = None
+        self.working_dir = working_dir
         self._program = program.lower()
-        self._score_filename = score_filename
+        self._score_filename = None
+        self.score_filename = score_filename
 
         if self.program == 'rosetta':
             from consensus_docking.preprocessing import ParserRosetta
