@@ -5,15 +5,20 @@ from consensus_docking.preprocessing import ParserFTDock
 from consensus_docking.tests import test_utils as tu
 
 
-
 @pytest.fixture
 def parser():
-    return ParserFTDock(working_dir='../../data', score_filename='dock.ene')
+    dir_name = os.path.dirname(__file__)
+    base_dir = os.path.join(dir_name, '../../data')
+    #return ParserFTDock(working_dir='../../data', score_filename='dock.ene')
+    return ParserFTDock(working_dir=base_dir, score_filename='dock.ene')
 
 
 @pytest.fixture
 def ref_norm_score_df():
-    norm_score = pd.read_csv('../../data/ftdock/verified_ftdock_norm_score.csv')
+    dir_name = os.path.dirname(__file__)
+    relative_path = '../../data/ftdock/verified_ftdock_norm_score.csv'
+    file_path = os.path.join(dir_name, relative_path)
+    norm_score = pd.read_csv(file_path)
     return norm_score
 
 

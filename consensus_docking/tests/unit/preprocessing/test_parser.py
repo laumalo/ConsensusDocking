@@ -60,7 +60,9 @@ class TestParser:
         Verify that Parser returns a norm_score file that is not empty using
         parserFTDock
         """
-        p = Parser('ftdock', 'dock.ene', working_dir='../../data')
+        dir_name = os.path.dirname(__file__)
+        base_dir = os.path.join(dir_name, '../../data')
+        p = Parser('ftdock', 'dock.ene', working_dir=base_dir)
         p.run(tmp_path)
         norm_score_file_path = tmp_path / f'{p.norm_score_filename}'
         assert os.path.getsize(norm_score_file_path) > 0
