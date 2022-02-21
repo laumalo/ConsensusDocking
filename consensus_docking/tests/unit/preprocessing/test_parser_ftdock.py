@@ -9,7 +9,6 @@ from consensus_docking.tests import test_utils as tu
 def parser():
     dir_name = os.path.dirname(__file__)
     base_dir = os.path.join(dir_name, '../../data')
-    #return ParserFTDock(working_dir='../../data', score_filename='dock.ene')
     return ParserFTDock(working_dir=base_dir, score_filename='dock.ene')
 
 
