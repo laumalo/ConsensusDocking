@@ -4,8 +4,10 @@ import logging
 import pandas as pd
 import numpy as np
 
-logging.basicConfig(format='%(asctime)s [%(module)s] - %(levelname)s: %(message)s', datefmt='%d-%b-%y %H:%M:%S',
-                    level=logging.INFO, stream=sys.stdout)
+logging.basicConfig(
+    format='%(asctime)s [%(module)s] - %(levelname)s: %(message)s',
+    datefmt='%d-%b-%y %H:%M:%S',
+    level=logging.INFO, stream=sys.stdout)
 
 
 class ParserRosetta:
@@ -34,7 +36,8 @@ class ParserRosetta:
         if isinstance(new_working_dir, str) and os.path.isdir(new_working_dir):
             self._working_dir = new_working_dir
         else:
-            logging.error(f"Please enter a valid working_dir that exists. Keeping {self.working_dir}")
+            logging.error(f"Please enter a valid working_dir that exists. "
+                          f"Keeping {self.working_dir}")
 
     @working_dir.getter
     def working_dir(self):
@@ -59,8 +62,8 @@ class ParserRosetta:
         if isinstance(new_score_filename, str) and os.path.exists(file_path):
             self._score_filename = new_score_filename
         else:
-            logging.error(f"Please enter a valid score_filename that exists in {folder_path}. "
-                          f"Keeping {self.score_filename}")
+            logging.error(f"Please enter a valid score_filename that exists "
+                          f"in {folder_path}. Keeping {self.score_filename}")
 
     @score_filename.getter
     def score_filename(self):
@@ -83,7 +86,8 @@ class ParserRosetta:
         if isinstance(new_df, pd.DataFrame):
             self._df = new_df
         else:
-            message = "Please enter a valid pd.DataFrame object. Keeping previous."
+            message = "Please enter a valid pd.DataFrame object. " \
+                      "Keeping previous."
             logging.error(message)
             raise TypeError(message)
 
@@ -100,22 +104,28 @@ class ParserRosetta:
         """
         It reads the scoring file and saves it to self.df
         """
-        scoring_file_path = os.path.join(self.working_dir, self.program, self.score_filename)
+        scoring_file_path = os.path.join(self.working_dir, self.program,
+                                         self.score_filename)
         self.df = pd.read_csv(scoring_file_path, delimiter='\s+', skiprows=[0])
         logging.debug(f"Scoring file read {scoring_file_path}: \n {self.df} ")
 
     def __norm_scores(self):
         """
-        It normalizes the score being 1 the best (the most negative) and 0 the worst (the most positive) and adds a new
-        column to self.df with the normalized score
+        It normalizes the score being 1 the best (the most negative) and 0 the
+        worst (the most positive) and adds a new column to self.df with the
+        normalized score
         """
         scores = np.array(self.df.total_score)
-        self.df['norm_score'] = abs((scores - np.max(scores))) / (np.max(scores) - np.min(scores))
-        logging.debug(f"Normalizing scores using: scores - {np.max(scores)} / ( {np.max(scores)} - {np.min(scores)})")
+        min_sc = np.min(scores)
+        max_sc = np.max(scores)
+        self.df['norm_score'] = abs((scores - max_sc)) / (max_sc - min_sc)
+        logging.debug(f"Normalizing scores using: |scores - {max_sc} "
+                      f"/ ( {max_sc} - {min_sc})|")
 
     def __norm_ids(self):
         """
-        It normalizes the ids names (program_ + id number) and adds a new column to self.df with the normalized ids.
+        It normalizes the ids names (program_ + id number) and adds a new
+        column to self.df with the normalized ids.
         """
         self.df['norm_ids'] = f'{self.program}_' + self.df.description.str[-5:]
 
@@ -127,7 +137,8 @@ class ParserRosetta:
 
     def norm(self):
         """
-        It adds new columns to self.df normalizing scores and ids and finally sorts by norm_score in descending order.
+        It adds new columns to self.df normalizing scores and ids and finally
+        sorts by norm_score in descending order.
         """
         self.__norm_scores()
         self.__norm_ids()
@@ -135,13 +146,16 @@ class ParserRosetta:
 
     def save(self, output_folder):
         """
-        It saves the normalized ids, the original score and the normalized score from self.df after being normalized
-        to a csv file.
+        It saves the normalized ids, the original score and the normalized
+        score from self.df after being normalized to a csv file.
         """
         columns_to_save = ['norm_ids', 'total_score', 'norm_score']
         header_names = ['ids', 'total_score', 'norm_score']
         if 'norm_score' not in self.df.columns:
-            message = "You must normalize (sc_parser.norm()) before saving the csv with the normalized the data."
+            message = "You must normalize (sc_parser.norm()) before saving " \
+                      "the csv with the normalized the data. "
             raise AttributeError(message)
-        norm_score_file_path = os.path.join(output_folder, self.norm_score_filename)
-        self.df.to_csv(norm_score_file_path, columns=columns_to_save, header=header_names, index=False)
+        norm_score_file_path = os.path.join(output_folder,
+                                            self.norm_score_filename)
+        self.df.to_csv(norm_score_file_path, columns=columns_to_save,
+                       header=header_names, index=False)
