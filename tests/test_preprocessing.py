@@ -1,7 +1,21 @@
 import os
 import pytest
+import pandas as pd 
 from consensus_docking.preprocessing import *
-from consensus_docking.tests import test_utils as tu
+from .utils import * 
+
+@pytest.fixture
+def parser():
+    dir_name = os.path.dirname(__file__)
+    base_dir = os.path.join(dir_name, 'data')
+    return ParserFTDock(working_dir=base_dir, score_filename='dock.ene')
+
+@pytest.fixture
+def ref_norm_score_df():
+    relative_path = 'data/ftdock/verified_ftdock_norm_score.csv'
+    file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                             relative_path)
+    return pd.read_csv(file_path)
 
 
 class TestParser:
@@ -17,13 +31,13 @@ class TestParser:
                               ("frodock", ParserFroDock),
                               ("lightdock", ParserLightDock),
                               ("patchdock", ParserPatchDock)])
+    
     def test_can_set_correct_parser(self, program, parser_class, tmp_path):
         """
         Test that Parser makes the correct class instance according to program
         """
         sc_filename = 'dock.sc'
-        base_dir, _, _ = tu.make_directory_structure(tmp_path, program,
-                                                     sc_filename)
+        base_dir, *c = make_directory_structure(tmp_path, program, sc_filename)
         p = Parser(program, sc_filename, working_dir=base_dir)
         assert p.parser.program == program
         assert isinstance(p.parser, parser_class)
@@ -35,7 +49,7 @@ class TestParser:
         """
         sc_filename = 'dock.sc'
         program = 'ftdock'
-        base_dir, _, _ = tu.make_directory_structure(tmp_path, program,
+        base_dir, *c = make_directory_structure(tmp_path, program,
                                                      sc_filename)
         # test wrong score file
         with pytest.raises(Exception):
@@ -50,7 +64,7 @@ class TestParser:
         """
         sc_filename = 'dock.sc'
         program = 'dummy_program'
-        base_dir, _, _ = tu.make_directory_structure(tmp_path, program,
+        base_dir, *c = make_directory_structure(tmp_path, program,
                                                      sc_filename)
         with pytest.raises(Exception):
             Parser(program, sc_filename, working_dir=base_dir)
@@ -61,8 +75,50 @@ class TestParser:
         parserFTDock
         """
         dir_name = os.path.dirname(__file__)
-        base_dir = os.path.join(dir_name, '../../data')
+        base_dir = os.path.join(dir_name, 'data')
         p = Parser('ftdock', 'dock.ene', working_dir=base_dir)
         p.run(tmp_path)
         norm_score_file_path = tmp_path / f'{p.norm_score_filename}'
         assert os.path.getsize(norm_score_file_path) > 0
+
+
+class TestParserFTDock:
+    """
+    It wraps all tests that involve the ParserFTDock class
+    """
+    def test_initialization(self, tmp_path):
+        """
+        Test it can initialize the parser
+        """
+        sc_filename = 'dock.sc'
+        program = 'ftdock'
+        base_dir, *c = make_directory_structure(tmp_path, program,
+                                                     sc_filename)
+        p = ParserFTDock(working_dir=base_dir, score_filename=sc_filename)
+        assert isinstance(p, ParserFTDock)
+    
+    def test_validate_read(self, parser):
+        """
+        Test whether the parser can properly read a correct input file
+        """
+        parser.read()
+        df_col_names = list(parser.df.columns)
+        desired_col_names = ['Conf', 'Ele', 'Desolv', 'VDW', 'Total', 'RANK']
+        for col in desired_col_names:
+            assert col in df_col_names
+
+    def test_invalid_sc_file(self, tmp_path):
+        """
+        Test that an error is raised when introducing an invalid score file
+        """
+        with pytest.raises(Exception):
+            ParserFTDock(working_dir=tmp_path, score_filename='dummy')
+
+    def test_cannot_save_before_norm(self, parser, tmp_path):
+        """
+        Tests that an error is raised if the df is not normalized before saving
+        the norm_scores.csv
+        """
+        parser.read()
+        with pytest.raises(Exception):
+            parser.save(tmp_path)
