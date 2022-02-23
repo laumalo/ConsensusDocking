@@ -202,7 +202,7 @@ class Aligner_3points(object):
             # Save aligned structure to PDB.
             ppdb.to_pdb(pdb_query.replace('.pdb', '_aligned.pdb'))
 
-    def run_aligment(path, chain, n_proc = 1): 
+    def run_aligment(self, path, chain, n_proc = 1): 
         files = [os.path.join(path,file) for file in os.listdir(path) 
                  if file.endswith('.pdb')]
         align_paral = partial(self.align, chain = chain)
