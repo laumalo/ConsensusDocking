@@ -167,7 +167,7 @@ def run_encoding(params, path, output_path, n_proc):
     else:  
         # Encoding structures
         if 'encode' in keys: 
-        logging.info(' - Running encoding:')
+            logging.info(' - Running encoding:')
             folders_to_encode = \
                 [folder.strip() for folder in list(params['encode'].split(','))]
             folder_chain_to_encode = \

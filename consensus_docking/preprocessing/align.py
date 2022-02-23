@@ -202,12 +202,12 @@ class Aligner_3points(object):
             # Save aligned structure to PDB.
             ppdb.to_pdb(pdb_query.replace('.pdb', '_aligned.pdb'))
 
-        def run_aligment(path, chain, n_proc = 1): 
-            files = [os.path.join(path,file) for file in os.listdir(path) 
-                     if file.endswith('.pdb')]
-            align_paral = partial(align, chain = chain)
-            with Pool(n_proc) as p:
-                list(p.imap(align_paral, files))
+    def run_aligment(path, chain, n_proc = 1): 
+        files = [os.path.join(path,file) for file in os.listdir(path) 
+                 if file.endswith('.pdb')]
+        align_paral = partial(self.align, chain = chain)
+        with Pool(n_proc) as p:
+            list(p.imap(align_paral, files))
 
 class Aligner(object):
     """
@@ -272,7 +272,7 @@ class Aligner(object):
         for chain in chains:
             chain_id = self._get_chains_dict(structure).get(chain)
             atoms_to_align = \
-                ref_traj.topology.select("chainid {} and name CA"
+                structure.topology.select("chainid {} and name CA"
                                          .format(chain_id))
             atoms_align_chains.append(atoms_to_align)
         return np.concatenate(atoms_align_chains)   
@@ -335,8 +335,8 @@ class Aligner(object):
                                                       self.chains_ref)
 
         # Function to be parallelized
-        align_structures_paral = partial(align_structures, ref_traj = md.load(self.pdb_ref),
+        align_structures_paral = partial(self.align, ref_traj = md.load(self.pdb_ref),
                                          atoms_to_align_ref = atoms_to_align_ref, chains = chains)
         
-        with Pool(args.n_proc) as p:
+        with Pool(n_proc) as p:
             list(p.imap(align_structures_paral, files))
