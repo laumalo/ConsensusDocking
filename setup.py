@@ -12,7 +12,6 @@ setuptools.setup(
     url="https://github.com/laumalo/ConsensusDocking",
     packages=[
         'consensus_docking',
-        'consensus_docking/tests',
         'consensus_docking/preprocessing',
         'consensus_docking/encoding',
         'consensus_docking/clustering',

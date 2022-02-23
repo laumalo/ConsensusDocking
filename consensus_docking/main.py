@@ -167,7 +167,7 @@ def run_encoding(params, path, output_path, n_proc):
     else:  
         # Encoding structures
         if 'encode' in keys: 
-        logging.info(' - Running encoding:')
+            logging.info(' - Running encoding:')
             folders_to_encode = \
                 [folder.strip() for folder in list(params['encode'].split(','))]
             folder_chain_to_encode = \
@@ -202,21 +202,7 @@ def run_encoding(params, path, output_path, n_proc):
             logging.info('     Encoding saved to {}'.format(merged_csv_output))
 
 def run_clustering(params, path, output_path, n_pro):
-    """
-    """
-    AVAILABLE_KEYS = ['encoding_file','clustering_algorithm', 'eps', 'metric', 
-                      'num_iter','keep_clusters']
-    keys = [k for k in params]
-
-    from consensus_docking.encoding import Encoding
-    encoding = Encoding.from_csv(params['encoding_file'])
-    encoding.df.columns = \
-        ['File', 'Score','x1','y1','z1','x2','y2','z2','x3','y3','z3']
-    coords = encoding.df[['x1','y1','z1','x2','y2','z2','x3','y3','z3']]
-    
-    from consensus_docking.clustering import Clustering
-    clusters = Clustering(data = coords,
-                          clustering_algorithm = params['clustering_algorithm']),
+    pass 
                            
 
 

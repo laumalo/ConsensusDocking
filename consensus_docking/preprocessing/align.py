@@ -1,14 +1,17 @@
 """
-This module containts all the methods related with the aligment of 
+This module contains all the methods related with the alignment of
 PDB structures.
 """
+from functools import partial
+from multiprocessing import Pool
 from biopandas.pdb import PandasPdb
 import numpy as np
 import scipy.spatial as spatial
 import torch 
-
+import mdtraj as md
 import logging
-import sys 
+import sys
+import os
 
 logging.basicConfig(format=
     '%(asctime)s [%(module)s] - %(levelname)s: %(message)s',
@@ -199,12 +202,12 @@ class Aligner_3points(object):
             # Save aligned structure to PDB.
             ppdb.to_pdb(pdb_query.replace('.pdb', '_aligned.pdb'))
 
-        def run_aligment(path, chain, n_proc = 1): 
-            files = [os.path.join(path,file) for file in os.listdir(path) 
-                     if file.endswith('.pdb')]
-            align_paral = partial(align, chain = chain)
-            with Pool(n_proc) as p:
-                list(p.imap(align_paral, files))
+    def run_aligment(self, path, chain, n_proc = 1): 
+        files = [os.path.join(path,file) for file in os.listdir(path) 
+                 if file.endswith('.pdb')]
+        align_paral = partial(self.align, chain = chain)
+        with Pool(n_proc) as p:
+            list(p.imap(align_paral, files))
 
 class Aligner(object):
     """

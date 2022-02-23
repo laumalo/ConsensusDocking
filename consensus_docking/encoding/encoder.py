@@ -182,7 +182,7 @@ class Encoder(object):
         # Save all the encoded coordinates into a dataframe
         encoding = np.frombuffer(array, dtype=float).reshape(len(file_paths),11)
         df_encoding = pd.DataFrame(
-                        result.astype(str),
+                        encoding.astype(str),
                         columns = ['ids', 'norm_score', 'x1', 'y1', 'z1',
                                    'x2', 'y2', 'z2', 'x3', 'y3', 'z3'])
 
