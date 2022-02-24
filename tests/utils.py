@@ -1,5 +1,6 @@
 import os
 
+
 def make_directory_structure(tmp_path, program, sc_filename='dock.sc'):
     base_path = str(tmp_path)
     program_folder = os.path.join(base_path, program)
