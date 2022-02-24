@@ -1,4 +1,4 @@
-
+import mdtraj as md 
 
 def get_chains_dict(pdb):
         """

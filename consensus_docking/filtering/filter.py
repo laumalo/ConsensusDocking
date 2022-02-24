@@ -6,6 +6,8 @@ from multiprocessing import Pool
 from functools import partial
 import mdtraj as md
 import tempfile
+import pandas as pd 
+import sys
 
 import logging 
 logging.basicConfig(
@@ -126,7 +128,7 @@ class _Filter(object):
         df_filtered = df[df['File'].isin(filtered_structures)]
 
         out_file = file_filtered.replace('.csv', '_filtered.csv')
-        df_filtered.to_csv(output_file)
+        df_filtered.to_csv(out_file)
 
     def run(self, d_proteinA, d_proteinB, filter_distance, output , n_proc = 1):
         """
