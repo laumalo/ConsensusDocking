@@ -1,17 +1,19 @@
 import os
 import pytest
-import pandas as pd 
+import pandas as pd
 from consensus_docking.preprocessing import *
-from .utils import * 
+from .utils import *
+
 
 @pytest.fixture
-def parser():
+def parser_ftdock():
     dir_name = os.path.dirname(__file__)
     base_dir = os.path.join(dir_name, 'data')
     return ParserFTDock(working_dir=base_dir, score_filename='dock.ene')
 
+
 @pytest.fixture
-def ref_norm_score_df():
+def ref_norm_score_df_ftdock():
     relative_path = 'data/ftdock/verified_ftdock_norm_score.csv'
     file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                              relative_path)
@@ -31,7 +33,6 @@ class TestParser:
                               ("frodock", ParserFroDock),
                               ("lightdock", ParserLightDock),
                               ("patchdock", ParserPatchDock)])
-    
     def test_can_set_correct_parser(self, program, parser_class, tmp_path):
         """
         Test that Parser makes the correct class instance according to program
@@ -49,8 +50,7 @@ class TestParser:
         """
         sc_filename = 'dock.sc'
         program = 'ftdock'
-        base_dir, *c = make_directory_structure(tmp_path, program,
-                                                     sc_filename)
+        base_dir, *c = make_directory_structure(tmp_path, program, sc_filename)
         # test wrong score file
         with pytest.raises(Exception):
             Parser(program, 'dummy_sc_file', working_dir=base_dir)
@@ -64,8 +64,7 @@ class TestParser:
         """
         sc_filename = 'dock.sc'
         program = 'dummy_program'
-        base_dir, *c = make_directory_structure(tmp_path, program,
-                                                     sc_filename)
+        base_dir, *c = make_directory_structure(tmp_path, program, sc_filename)
         with pytest.raises(Exception):
             Parser(program, sc_filename, working_dir=base_dir)
 
@@ -92,17 +91,16 @@ class TestParserFTDock:
         """
         sc_filename = 'dock.sc'
         program = 'ftdock'
-        base_dir, *c = make_directory_structure(tmp_path, program,
-                                                     sc_filename)
+        base_dir, _, _ = make_directory_structure(tmp_path, program, sc_filename)
         p = ParserFTDock(working_dir=base_dir, score_filename=sc_filename)
         assert isinstance(p, ParserFTDock)
-    
-    def test_validate_read(self, parser):
+
+    def test_validate_read(self, parser_ftdock):
         """
         Test whether the parser can properly read a correct input file
         """
-        parser.read()
-        df_col_names = list(parser.df.columns)
+        parser_ftdock.read()
+        df_col_names = list(parser_ftdock.df.columns)
         desired_col_names = ['Conf', 'Ele', 'Desolv', 'VDW', 'Total', 'RANK']
         for col in desired_col_names:
             assert col in df_col_names
@@ -114,11 +112,35 @@ class TestParserFTDock:
         with pytest.raises(Exception):
             ParserFTDock(working_dir=tmp_path, score_filename='dummy')
 
-    def test_cannot_save_before_norm(self, parser, tmp_path):
+    def test_norm(self, parser_ftdock, ref_norm_score_df_ftdock):
+        """
+        Test that the output file corresponds to the output file
+        """
+        parser_ftdock.read()
+        parser_ftdock.norm()
+        parser_ftdock.df.sort_index(inplace=True)
+        assert round(ref_norm_score_df_ftdock['norm_score'], 10).\
+            equals(round(parser_ftdock.df['norm_score'], 10))
+
+    def test_can_save_after_norm(self, parser_ftdock, ref_norm_score_df_ftdock,
+                                 tmp_path):
+        """
+        Test that creates a non-empty output file and validates the output
+        """
+        parser_ftdock.read()
+        parser_ftdock.norm()
+        parser_ftdock.save(tmp_path)
+        norm_score_file_path = tmp_path / f'{parser_ftdock.norm_score_filename}'
+        out_df = pd.read_csv(norm_score_file_path)
+        assert os.path.getsize(norm_score_file_path) > 0
+        assert ref_norm_score_df_ftdock.equals(out_df)
+
+    def test_cannot_save_before_norm(self, parser_ftdock, tmp_path):
         """
         Tests that an error is raised if the df is not normalized before saving
         the norm_scores.csv
         """
-        parser.read()
+        parser_ftdock.read()
         with pytest.raises(Exception):
-            parser.save(tmp_path)
+            parser_ftdock.save(tmp_path)
+
