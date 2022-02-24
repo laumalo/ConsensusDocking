@@ -30,7 +30,7 @@ class TestParserZDock:
         """
         sc_filename = 'dock.sc'
         program = 'zdock'
-        base_dir, _, _ = make_directory_structure(tmp_path, program, sc_filename)
+        base_dir, *c = make_directory_structure(tmp_path, program, sc_filename)
         p = ParserZDock(working_dir=base_dir, score_filename=sc_filename)
         assert isinstance(p, ParserZDock)
 
