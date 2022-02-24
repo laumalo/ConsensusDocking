@@ -57,7 +57,7 @@ class TestParserFTDock:
         """
         parser.read()
         parser.norm()
-        parser.df.sort_index(inplace=True)
+        parser.df.reset_index(inplace=True)
         assert round(ref_norm_score_df['norm_score'], 10).\
             equals(round(parser.df['norm_score'], 10))
 
