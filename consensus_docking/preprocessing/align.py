@@ -227,31 +227,6 @@ class Aligner(object):
         self.pdb_ref = pdb_ref
         self.chains_ref = chains_ref
 
-
-    def _get_chains_dict(self, pdb):
-        """
-        It generates a dictionary with the chain indices (in Mdtraj) to chain
-        names in the PDB file. 
-
-        Parameters
-        ----------
-        pdb : str
-            PDB file.
-
-        Returns
-        -------
-        d : dict
-            Dictionary chain idex/ID. 
-        """
-        from more_itertools import unique_everseen
-
-        chain_indices = [chain.index for chain in md.load(pdb).topology.chains]
-        with open(pdb, 'r') as f: 
-            chains_pdb_ids = \
-                list(unique_everseen([line[21:22] for line in f.readlines() 
-                     if line.startswith('ATOM') or line.startswith('HETATOM')]))
-        return {id:index for id,index in zip(chains_pdb_ids, chain_indices)} 
-
     def _get_atoms_to_align(self, structure, chains):
         """
         It gets the CA of the chains selected. 
@@ -268,9 +243,10 @@ class Aligner(object):
         atoms_to_align : str
             List CA indices of the fetched chains. 
         """ 
+        from consensus_docking.utils.mdtraj import get_chains_dict
         atoms_align_chains = []
         for chain in chains:
-            chain_id = self._get_chains_dict(structure).get(chain)
+            chain_id = get_chains_dict(structure).get(chain)
             atoms_to_align = \
                 structure.topology.select("chainid {} and name CA"
                                          .format(chain_id))
@@ -301,11 +277,11 @@ class Aligner(object):
         
         # Superposition of selected chains
         query_traj = md.load(query_structure)
-        # Commented to avoid Syntax error
-        #for chain in chains:
-        #    chain_id =
-        atoms_to_align_query = query_traj.topology.select("chainid 0 and name CA")
-        query_traj.superpose(ref_traj,atom_indices = atoms_to_align_query,ref_atom_indices = atoms_to_align_ref)
+        atoms_to_align_query = \
+            query_traj.topology.select("chainid {} and name CA")
+        query_traj.superpose(ref_traj,
+                             atom_indices = atoms_to_align_query,
+                             ref_atom_indices = atoms_to_align_ref)
         output_path = query_structure.replace('.pdb', '_align.pdb')
 
         # Export alignes structure
@@ -335,8 +311,9 @@ class Aligner(object):
                                                       self.chains_ref)
 
         # Function to be parallelized
-        align_structures_paral = partial(self.align, ref_traj = md.load(self.pdb_ref),
-                                         atoms_to_align_ref = atoms_to_align_ref, chains = chains)
+        align_structures_paral = partial(self.align,
+            ref_traj = md.load(self.pdb_ref),
+            atoms_to_align_ref = atoms_to_align_ref, chains = chains)
         
         with Pool(n_proc) as p:
             list(p.imap(align_structures_paral, files))
