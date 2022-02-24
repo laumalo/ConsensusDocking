@@ -8,7 +8,10 @@ import mdtraj as md
 import tempfile
 
 import logging 
-logging.getLogger().setLevel(logging.INFO)
+logging.basicConfig(
+    format='%(asctime)s [%(module)s] - %(levelname)s: %(message)s',
+    datefmt='%d-%b-%y %H:%M:%S',level=logging.INFO, stream=sys.stdout)
+
 
 
 class _Filter(object): 
@@ -96,6 +99,7 @@ class _Filter(object):
                         for l1_element,l2_element in itertools.product(l1,l2))
             if value < cutoff:
                 return os.path.basename(file_to_parse), value
+                break
 
 
     def filter_encoding_file(self, encoding_file, file_filtered = None): 
@@ -142,6 +146,9 @@ class _Filter(object):
         n_proc : int
             Number of processors to run it in parallel. 
         """
+
+        logging.info('  - Filtering structures based on {}'
+            .format(self._filtering_method))
         
         files_pdb = [os.path.join(self.path, file) 
                      for file in os.listdir(self.path) if file.endswith('pdb')]
@@ -161,9 +168,14 @@ class _Filter(object):
         with Pool(n_proc) as p:
             self.filtered_structure = p.map(filter_structure_paral, files)
 
+        logging.info('  -   {}/{} structures filtered'
+            .format(len(self.filtered_structure), len(files)))
+        
         with open(output, 'w') as f:
             for structure in self.filtered_structure:
                 f.write("%s\n" % structure)
+        logging.info('  -   Filtered structures information saved as {}'
+            .format(output))
 
 
 class FilterMASIF(_Filter): 
