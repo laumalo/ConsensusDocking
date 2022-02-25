@@ -96,7 +96,10 @@ class Parser:
 
     @score_filename.setter
     def score_filename(self, new_score_filename):
-        folder_path = os.path.join(self.working_dir, self.program)
+        if self.program != 'lightdock':
+            folder_path = os.path.join(self.working_dir, self.program)
+        elif self.program == 'lightdock':
+            folder_path = os.path.join(self.working_dir, self.program, 'swarm_0')
         file_path = os.path.join(folder_path, new_score_filename)
         if isinstance(new_score_filename, str) and os.path.exists(file_path):
             self._score_filename = new_score_filename
