@@ -20,9 +20,9 @@ def ref_norm_score_df():
     return pd.read_csv(file_path)
 
 
-class TestParserPiper:
+class TestParserFroDock:
     """
-    It wraps all tests that involve the ParserPiper class
+    It wraps all tests that involve the ParserFroDock class
     """
     def test_initialization(self, tmp_path):
         """
