@@ -21,7 +21,9 @@ class TestParser:
         Test that Parser makes the correct class instance according to program
         """
         sc_filename = 'dock.sc'
-        base_dir, *c = make_directory_structure(tmp_path, program, sc_filename)
+        is_lightdock = False if program != 'lightdock' else True
+        base_dir, *c = make_directory_structure(tmp_path, program, sc_filename,
+                                                is_lightdock=is_lightdock)
         p = Parser(program, sc_filename, working_dir=base_dir)
         assert p.parser.program == program
         assert isinstance(p.parser, parser_class)
