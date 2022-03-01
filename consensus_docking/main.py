@@ -201,10 +201,46 @@ def run_encoding(params, path, output_path, n_proc):
                               index=False, encoding='utf-8-sig')
             logging.info('     Encoding saved to {}'.format(merged_csv_output))
 
-def run_clustering(params, path, output_path, n_pro):
-    pass 
-                           
+def run_clustering(params, path, output_path, n_proc):
+    """
+    It runs the clustering block.
 
+    Parameters
+    ----------
+    params : condifparser object
+        Configuration parameters to run the encoding.
+    path : str
+        Path to the working folder. 
+    n_proc : int
+        Number of processors. 
+    """
+    AVAILABLE_CLUSTERINGS = ['DBSCAN_Kmeans']
+
+    if not params['clustering_algorithm'] in AVAILABLE_CLUSTERINGS:
+        info.error('Wrong clustering algorithm selected.')
+    
+    else: 
+        if params['clustering_algorithm'] == 'DBSCAN_Kmeans':
+            
+            # Optional parameters
+            DEFAULT_CLUSTERS = 30
+            DEFAULT_EPS_DBSCAN = 6
+            DEFAULT_DBSCAN_METRIC = 'euclidian'
+            n_clusters = params['n_clusters'] if 'n_clusters' in params \
+                         else DEFAULT_CLUSTERS
+            eps_DBSCAN = params['eps_DBSCAN'] if 'eps_DBSCAN' in params \
+                         else DEFAULT_EPS_DBSCAN
+            metric_DBSCAN =  params['metric_DBSCAN'] if 'metric_DBSCAN' \
+                             in params else DEFAULT_DBSCAN_METRIC
+            
+            # Clustering
+            from consensus_docking.clustering import TwoStepsClustering 
+            clustering = TwoStepsClustering(
+                encoding_file = params['encoding_file'],
+                n_clusters = n_clusters,
+                eps_DBSCAN = eps_DBSCAN,
+                metric_DBSCAN = metric_DBSCAN)
+                           
 
 def run_analysis(params, path, output_path, n_pro): 
     pass 
@@ -273,7 +309,7 @@ def main(args):
             if block == 'encoding': 
                 run_encoding(params[block], args.path,
                              encodings_output, args.n_proc)
-            if block = 'clustering.step1' or block == 'clustering.step2': 
+            if block = 'clustering': 
                 run_clustering(params[block], args.path,
                                clustering_output, args.n_proc)
             if block == 'analysis': 
