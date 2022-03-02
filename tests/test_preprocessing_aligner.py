@@ -4,6 +4,11 @@ import mdtraj as md
 from consensus_docking.preprocessing import Aligner
 
 
+@pytest.fixture
+def relative_path():
+    return f'data/align/'
+
+
 class TestAligner:
     """
     It wraps all tests that involve the Aligner class
@@ -18,11 +23,11 @@ class TestAligner:
                                'not_aligned_2_chain_2.pdb', 'XY'),
                               ('aligned_2_chain_2.pdb', 'C',
                                'not_aligned_2_chain_1.pdb', 'C')])
-    def test_can_align_chains(self, ref_pdb, ref_chain, query_pdb, query_chain):
+    def test_can_align_chains(self, relative_path, ref_pdb, ref_chain,
+                              query_pdb, query_chain):
         """
         Test that the aligner can superpose chains
         """
-        relative_path = f'data/align/'
         ref_path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                 relative_path, ref_pdb)
         query_path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
@@ -42,11 +47,11 @@ class TestAligner:
                                'not_aligned_2_chain_1.pdb', 'C'),
                               ('aligned_2_chain_2.pdb', 'C',
                                'not_aligned_2_chain_1.pdb', 'A')])
-    def test_fail_alignment(self, ref_pdb, ref_chain, query_pdb, query_chain):
+    def test_fail_alignment(self, relative_path, ref_pdb, ref_chain, query_pdb,
+                            query_chain):
         """
         Test that the aligner can not superpose chains and raises an error
         """
-        relative_path = f'data/align/'
         ref_path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                 relative_path, ref_pdb)
         query_path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
@@ -54,4 +59,35 @@ class TestAligner:
         a = Aligner(ref_path, ref_chain)
         with pytest.raises(Exception):
             a.align(query_path, query_chain, remove=False)
+
+
+    @pytest.mark.parametrize("ref_pdb, ref_chain, query_chain",
+                             [('aligned_2_chain_2.pdb', 'AB', 'AB'),
+                              ('aligned_2_chain_2.pdb', 'AB', 'BA'),
+                              ('aligned_2_chain_2.pdb', 'C', 'C')])
+    def test_run_alignment_in_folder(self, relative_path, ref_pdb, ref_chain,
+                                     query_chain):
+        """
+        Test it can align all the files in a folder
+        """
+
+        ref_path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                relative_path, ref_pdb)
+        folder_path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                   relative_path)
+        a = Aligner(ref_path, ref_chain)
+        a.run_aligment(folder_path, query_chain, remove=False,
+                       prefix_file='test_run_alignment')
+
+        out_file_1 = os.path.join(folder_path, 'test_run_alignment_1_align.pdb')
+        out_file_2 = os.path.join(folder_path, 'test_run_alignment_2_align.pdb')
+        ref = md.load(ref_path)
+        out_1 = md.load(out_file_1)
+        out_2 = md.load(out_file_2)
+        rmsd_1 = md.rmsd(out_1, ref, atom_indices=a.atoms_to_align_ref)[0]
+        rmsd_2 = md.rmsd(out_2, ref, atom_indices=a.atoms_to_align_ref)[0]
+        assert round(rmsd_1, 2) == 0.
+        assert round(rmsd_2, 2) == 0.
+        os.remove(out_file_1)
+        os.remove(out_file_2)
 

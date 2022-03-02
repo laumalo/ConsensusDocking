@@ -263,8 +263,6 @@ class Aligner:
         return np.concatenate(atoms_align_chains)
 
     def align(self, query_structure, chains, remove=True):
-    #def align(self, query_structure, ref_traj, atoms_to_align_ref, chains,
-    #          remove=True):
         """
         It aligns a structure using MdTraj implementation. 
 
@@ -296,7 +294,7 @@ class Aligner:
         if remove:
             os.remove(query_structure)
 
-    def run_aligment(self, path, chains, n_proc=1, remove=True):
+    def run_aligment(self, path, chains, n_proc=1, remove=True, prefix_file=''):
         """
         It iterates (in parallel) over all the structures and aligns them to a 
         reference (only the selected chains) structure. 
@@ -308,10 +306,16 @@ class Aligner:
         chains : list 
             List of chains to align. 
         n_proc : int
-            Number of processors. 
+            Number of processors.
+        remove : bool
+            True if you want to remove the unaligned structure.
+        prefix_file : str
+            Prefix in the files that you want to align. By default, it takes all
+             the PDB files regardless their prefix.
         """
         files = [os.path.join(path, file) for file in
-                 os.listdir(path) if file.endswith('.pdb')]
+                 os.listdir(path) if (file.endswith('.pdb') and
+                                      file.startswith(prefix_file))]
 
         # Function to be parallelized
         align_structures_paral = partial(self.align, chains=chains,
