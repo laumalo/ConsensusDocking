@@ -38,7 +38,7 @@ class TwoStepsClustering(object):
             List of all the file names. 
         """
         df = pd.read_csv(self.encoding_file)
-        df.columns= ['Unnamed: 0','File', 'Score','x1','y1','z1',
+        df.columns= ['File', 'Score','x1','y1','z1',
                      'x2','y2','z2','x3','y3','z3']
         df_coords = df[['x1','y1','z1','x2','y2','z2','x3','y3','z3']]
         file_names = [name[0] for name in df[['File']].values]

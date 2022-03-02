@@ -35,8 +35,6 @@ class Encoder(object):
         self.path = dockings_path
         self.docking_program = docking_program.lower()
         self.chain = chain
-
-        self.encoding = None
         
 
     def get_most_dist_points(self, data, K, MAX_LOOPS=20):
@@ -194,8 +192,8 @@ class Encoder(object):
         # Parse names and scorings for each file
         if score_file is None or not os.path.exists(score_file):
             if score_file is None:
-                logging.warning(f'norm_score path was NOT specified,' +
-                                 ' so energies won\'t be added to {output}')
+                logging.warning(f'     Norm_score path was NOT specified,' +
+                                f' so energies won\'t be added to {output}')
             elif not os.path.exists(score_file):
                 logging.warning(f'{score_file} was NOT FOUND.')
             
@@ -216,13 +214,5 @@ class Encoder(object):
                     logging.warning(f'No ids from norm_score coincided with ' + 
                                      'file: {file_names[i]}. Setting 0 value.')
 
-        # Save as an Encoding object
-        from consensus_docking.encoding import Encoding
-        self.encoding = Encoding.from_dataframe(df_encoding) 
-
         # Export output file
         df_encoding.to_csv(output, index=False)
-
-    @property
-    def encoding(self): 
-        return self.encoding

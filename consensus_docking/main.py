@@ -49,8 +49,8 @@ def parse_conf_file(conf_file):
         Configuration parameters for all the blocks.
     """
 
-    AVAILABLE_BLOCKS = ['preprocessing', 'encoding', 'clustering.step1', 
-                       'clustering.step2', 'analysis']
+    AVAILABLE_BLOCKS = ['preprocessing', 'encoding', 'clustering', 'analysis']
+    
     config = configparser.ConfigParser()
     config.read(conf_file)
     consensus_blocks = config.sections()
@@ -170,10 +170,12 @@ def run_encoding(params, path, output_path, n_proc):
             logging.info(' - Running encoding:')
             folders_to_encode = \
                 [folder.strip() for folder in list(params['encode'].split(','))]
+            
             folder_chain_to_encode = \
                 [list(f.split('_')) for f in folders_to_encode]
             
-            if not all([f in available_folders for f in folders_to_parse]):
+            if not all(
+                [f in available_folders for f,c in folder_chain_to_encode]):
                 logging.error('Wrong selection of folders to encode.')
             else:
                 for folder, chain in folder_chain_to_encode: 
@@ -214,21 +216,21 @@ def run_clustering(params, path, output_path, n_proc):
     n_proc : int
         Number of processors. 
     """
-    AVAILABLE_CLUSTERINGS = ['DBSCAN_Kmeans']
+    AVAILABLE_CLUSTERINGS = ['DBSCAN-Kmeans']
 
     if not params['clustering_algorithm'] in AVAILABLE_CLUSTERINGS:
-        info.error('Wrong clustering algorithm selected.')
+        logging.error('Wrong clustering algorithm selected.')
     
     else: 
-        if params['clustering_algorithm'] == 'DBSCAN_Kmeans':
-            
+        if params['clustering_algorithm'] == 'DBSCAN-Kmeans':
+            logging.info('  Running Two-Step clustering algorithm.')
             # Optional parameters
             DEFAULT_CLUSTERS = 30
             DEFAULT_EPS_DBSCAN = 6
             DEFAULT_DBSCAN_METRIC = 'euclidian'
-            n_clusters = params['n_clusters'] if 'n_clusters' in params \
+            n_clusters = int(params['n_clusters']) if 'n_clusters' in params \
                          else DEFAULT_CLUSTERS
-            eps_DBSCAN = params['eps_DBSCAN'] if 'eps_DBSCAN' in params \
+            eps_DBSCAN = int(params['eps_DBSCAN']) if 'eps_DBSCAN' in params \
                          else DEFAULT_EPS_DBSCAN
             metric_DBSCAN =  params['metric_DBSCAN'] if 'metric_DBSCAN' \
                              in params else DEFAULT_DBSCAN_METRIC
@@ -240,6 +242,7 @@ def run_clustering(params, path, output_path, n_proc):
                 n_clusters = n_clusters,
                 eps_DBSCAN = eps_DBSCAN,
                 metric_DBSCAN = metric_DBSCAN)
+            clustering.run()
                            
 
 def run_analysis(params, path, output_path, n_pro): 
@@ -288,7 +291,8 @@ def main(args):
     # Check docking conformations
     AVAILABLE_PROGRAMS = ['ftdock', 'zdock', 'lightdock', 'frodock',
                           'patchdock', 'piper', 'rosetta']
-    programs = os.listdir(args.path)
+    ignored_folders = ['output']
+    programs = [p for p in os.listdir(args.path) if not p in ignored_folders] 
     checker = all([program in AVAILABLE_PROGRAMS for program in programs])
     if not checker:
         logging.error('Wrong docking program.')
@@ -309,7 +313,7 @@ def main(args):
             if block == 'encoding': 
                 run_encoding(params[block], args.path,
                              encodings_output, args.n_proc)
-            if block = 'clustering': 
+            if block == 'clustering': 
                 run_clustering(params[block], args.path,
                                clustering_output, args.n_proc)
             if block == 'analysis': 
