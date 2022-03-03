@@ -1,4 +1,4 @@
-# Consensus docking
+# ConsensusDocking
 
 ## Installation
 
