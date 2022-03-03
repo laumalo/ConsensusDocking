@@ -10,8 +10,10 @@ import linecache
 import logging
 import sys 
 
-logging.basicConfig(format='%(asctime)s [%(module)s] - %(levelname)s: %(message)s',  datefmt='%d-%b-%y %H:%M:%S',
-                    level=logging.INFO, stream=sys.stdout)
+logging.basicConfig(
+    format='%(asctime)s [%(module)s] - %(levelname)s: %(message)s',
+    datefmt='%d-%b-%y %H:%M:%S',
+    level=logging.INFO, stream=sys.stdout)
 
 
 class Encoder(object):
@@ -33,8 +35,6 @@ class Encoder(object):
         self.path = dockings_path
         self.docking_program = docking_program.lower()
         self.chain = chain
-
-        self.encoding = None
         
 
     def get_most_dist_points(self, data, K, MAX_LOOPS=20):
@@ -139,7 +139,7 @@ class Encoder(object):
 
     
 
-    def run_encoding(self, output, norm_score_file=None, n_proc=1):
+    def run_encoding(self, output, score_file=None, n_proc=1):
         """
         It runs the encoding of all the conformations found in the output
         docking folder. 
@@ -156,7 +156,8 @@ class Encoder(object):
         global array
 
         def init_arr(array):
-            globals()['array'] = np.frombuffer(array, dtype='float').reshape(len(file_paths), 11)
+            globals()['array'] = \
+                np.frombuffer(array, dtype='float').reshape(len(file_paths), 11)
 
         # Initialize array 
         file_paths = \
@@ -176,30 +177,32 @@ class Encoder(object):
 
         # Encoding
         encode_file_paral = partial(self.encode_file, atom_lines=[i, j, k])
+        
         Pool(n_proc, initializer=init_arr, initargs=(array,)).map(
             encode_file_paral, enumerate(file_paths))
 
         # Save all the encoded coordinates into a dataframe
-        encoding = np.frombuffer(array, dtype=float).reshape(len(file_paths),11)
+        encoding = \
+            np.frombuffer(array, dtype=float).reshape(len(file_paths), 11)
         df_encoding = pd.DataFrame(
-                        result.astype(str),
+                        encoding.astype(str),
                         columns = ['ids', 'norm_score', 'x1', 'y1', 'z1',
                                    'x2', 'y2', 'z2', 'x3', 'y3', 'z3'])
 
         # Parse names and scorings for each file
-        if norm_score_file is None or not os.path.exists(norm_score_file):
-            if norm_score_file is None:
-                logging.warning(f'norm_score path was NOT specified,' +
-                                 ' so energies won\'t be added to {output}')
-            elif not os.path.exists(norm_score_file):
-                logging.warning(f'{norm_score_file} was NOT FOUND,',
-                                 ' so energies won\'t be added to {output}')
+        if score_file is None or not os.path.exists(score_file):
+            if score_file is None:
+                logging.warning(f'     Norm_score path was NOT specified,' +
+                                f' so energies won\'t be added to {output}')
+            elif not os.path.exists(score_file):
+                logging.warning(f'{score_file} was NOT FOUND.')
+            
             for i, row in df_encoding.iterrows():
                 encoding_id = file_names[i]
                 df_encoding.at[i, 'ids'] = encoding_id
 
         else:
-            df_score = pd.read_csv(norm_score_file)
+            df_score = pd.read_csv(score_file)
             score_ids = df_score.ids.to_list()
             for i, row in df_encoding.iterrows():
                 encoding_id = file_names[i]
@@ -209,15 +212,7 @@ class Encoder(object):
                         float(df_score[df_score.ids == encoding_id].norm_score)
                 else:
                     logging.warning(f'No ids from norm_score coincided with ' + 
-                                     'file: {file_names[i]}.Setting 0 value')
-
-        # Save as an Encoding object
-        from consensus_docking.encoding import Encoding
-        self.encoding = Encoding.from_dataframe(df_encoding) 
+                                     'file: {file_names[i]}. Setting 0 value.')
 
         # Export output file
         df_encoding.to_csv(output, index=False)
-
-    @property
-    def encoding(self): 
-        return self.encoding

@@ -49,8 +49,8 @@ def parse_conf_file(conf_file):
         Configuration parameters for all the blocks.
     """
 
-    AVAILABLE_BLOCKS = ['preprocessing', 'encoding', 'clustering.step1', 
-                       'clustering.step2', 'analysis']
+    AVAILABLE_BLOCKS = ['preprocessing', 'encoding', 'clustering', 'analysis']
+    
     config = configparser.ConfigParser()
     config.read(conf_file)
     consensus_blocks = config.sections()
@@ -107,7 +107,7 @@ def run_preprocessing(params, path, output_path, n_proc):
                 if not all([f in folders for f in folders_to_align]):
                     logging.error('Wrong selection of folders to align.')
                 else: 
-                    for folder, chains in folders_chian_to_align:
+                    for folder, chains in folder_chain_to_align:
                         chains_to_align = list(chains.split())
                         logging.info('         Aligment of {}:'.format(folder))
                         folder_path = os.path.join(path, folder)
@@ -167,13 +167,15 @@ def run_encoding(params, path, output_path, n_proc):
     else:  
         # Encoding structures
         if 'encode' in keys: 
-        logging.info(' - Running encoding:')
+            logging.info(' - Running encoding:')
             folders_to_encode = \
                 [folder.strip() for folder in list(params['encode'].split(','))]
+            
             folder_chain_to_encode = \
                 [list(f.split('_')) for f in folders_to_encode]
             
-            if not all([f in available_folders for f in folders_to_parse]):
+            if not all(
+                [f in available_folders for f,c in folder_chain_to_encode]):
                 logging.error('Wrong selection of folders to encode.')
             else:
                 for folder, chain in folder_chain_to_encode: 
@@ -201,24 +203,47 @@ def run_encoding(params, path, output_path, n_proc):
                               index=False, encoding='utf-8-sig')
             logging.info('     Encoding saved to {}'.format(merged_csv_output))
 
-def run_clustering(params, path, output_path, n_pro):
+def run_clustering(params, path, output_path, n_proc):
     """
-    """
-    AVAILABLE_KEYS = ['encoding_file','clustering_algorithm', 'eps', 'metric', 
-                      'num_iter','keep_clusters']
-    keys = [k for k in params]
+    It runs the clustering block.
 
-    from consensus_docking.encoding import Encoding
-    encoding = Encoding.from_csv(params['encoding_file'])
-    encoding.df.columns = \
-        ['File', 'Score','x1','y1','z1','x2','y2','z2','x3','y3','z3']
-    coords = encoding.df[['x1','y1','z1','x2','y2','z2','x3','y3','z3']]
+    Parameters
+    ----------
+    params : condifparser object
+        Configuration parameters to run the encoding.
+    path : str
+        Path to the working folder. 
+    n_proc : int
+        Number of processors. 
+    """
+    AVAILABLE_CLUSTERINGS = ['DBSCAN-Kmeans']
+
+    if not params['clustering_algorithm'] in AVAILABLE_CLUSTERINGS:
+        logging.error('Wrong clustering algorithm selected.')
     
-    from consensus_docking.clustering import Clustering
-    clusters = Clustering(data = coords,
-                          clustering_algorithm = params['clustering_algorithm']),
+    else: 
+        if params['clustering_algorithm'] == 'DBSCAN-Kmeans':
+            logging.info('  Running Two-Step clustering algorithm.')
+            # Optional parameters
+            DEFAULT_CLUSTERS = 30
+            DEFAULT_EPS_DBSCAN = 6
+            DEFAULT_DBSCAN_METRIC = 'euclidian'
+            n_clusters = int(params['n_clusters']) if 'n_clusters' in params \
+                         else DEFAULT_CLUSTERS
+            eps_DBSCAN = int(params['eps_DBSCAN']) if 'eps_DBSCAN' in params \
+                         else DEFAULT_EPS_DBSCAN
+            metric_DBSCAN =  params['metric_DBSCAN'] if 'metric_DBSCAN' \
+                             in params else DEFAULT_DBSCAN_METRIC
+            
+            # Clustering
+            from consensus_docking.clustering import TwoStepsClustering 
+            clustering = TwoStepsClustering(
+                encoding_file = params['encoding_file'],
+                n_clusters = n_clusters,
+                eps_DBSCAN = eps_DBSCAN,
+                metric_DBSCAN = metric_DBSCAN)
+            clustering.run()
                            
-
 
 def run_analysis(params, path, output_path, n_pro): 
     pass 
@@ -266,7 +291,8 @@ def main(args):
     # Check docking conformations
     AVAILABLE_PROGRAMS = ['ftdock', 'zdock', 'lightdock', 'frodock',
                           'patchdock', 'piper', 'rosetta']
-    programs = os.listdir(args.path)
+    ignored_folders = ['output']
+    programs = [p for p in os.listdir(args.path) if not p in ignored_folders] 
     checker = all([program in AVAILABLE_PROGRAMS for program in programs])
     if not checker:
         logging.error('Wrong docking program.')
@@ -287,7 +313,7 @@ def main(args):
             if block == 'encoding': 
                 run_encoding(params[block], args.path,
                              encodings_output, args.n_proc)
-            if block = 'clustering.step1' or block == 'clustering.step2': 
+            if block == 'clustering': 
                 run_clustering(params[block], args.path,
                                clustering_output, args.n_proc)
             if block == 'analysis': 

@@ -4,8 +4,10 @@ import logging
 import pandas as pd
 import numpy as np
 
-logging.basicConfig(format='%(asctime)s [%(module)s] - %(levelname)s: %(message)s', datefmt='%d-%b-%y %H:%M:%S',
-                    level=logging.INFO, stream=sys.stdout)
+logging.basicConfig(
+    format='%(asctime)s [%(module)s] - %(levelname)s: %(message)s',
+    datefmt='%d-%b-%y %H:%M:%S',
+    level=logging.INFO, stream=sys.stdout)
 
 
 class ParserPatchDock:
@@ -19,9 +21,11 @@ class ParserPatchDock:
         score_filename : str
             Name of the score file.
         """
-        self._working_dir = working_dir
+        self._working_dir = None
+        self.working_dir = working_dir
         self._program = 'patchdock'
-        self._score_filename = score_filename
+        self._score_filename = None
+        self.score_filename = score_filename
         self._norm_score_filename = f'{self.program}_norm_score.csv'
         self._df = None
 
@@ -34,7 +38,8 @@ class ParserPatchDock:
         if isinstance(new_working_dir, str) and os.path.isdir(new_working_dir):
             self._working_dir = new_working_dir
         else:
-            logging.error(f"Please enter a valid working_dir that exists. Keeping {self.working_dir}")
+            logging.error(f"Please enter a valid working_dir that exists. "
+                          f"Keeping {self.working_dir}")
 
     @working_dir.getter
     def working_dir(self):
@@ -59,8 +64,8 @@ class ParserPatchDock:
         if isinstance(new_score_filename, str) and os.path.exists(file_path):
             self._score_filename = new_score_filename
         else:
-            logging.error(f"Please enter a valid score_filename that exists in {folder_path}. "
-                          f"Keeping {self.score_filename}")
+            logging.error(f"Please enter a valid score_filename that exists in"
+                          f" {folder_path}. Keeping {self.score_filename}")
 
     @score_filename.getter
     def score_filename(self):
@@ -83,7 +88,8 @@ class ParserPatchDock:
         if isinstance(new_df, pd.DataFrame):
             self._df = new_df
         else:
-            message = "Please enter a valid pd.DataFrame object. Keeping previous."
+            message = "Please enter a valid pd.DataFrame object. " \
+                      "Keeping previous."
             logging.error(message)
             raise TypeError(message)
 
@@ -99,7 +105,8 @@ class ParserPatchDock:
     @staticmethod
     def __find_starting_line(scoring_file_path):
         """
-        It finds the line number in which the comment section ends, which indicates the beginning of the scoring section.
+        It finds the line number in which the comment section ends, which
+        indicates the beginning of the scoring section.
         Parameters
         ----------
         scoring_file_path : str
@@ -119,27 +126,41 @@ class ParserPatchDock:
         """
         It reads the scoring file and saves it to self.df
         """
-        scoring_file_path = os.path.join(self.working_dir, self.program, self.score_filename)
+        scoring_file_path = os.path.join(self.working_dir, self.program,
+                                         self.score_filename)
         n = self.__find_starting_line(scoring_file_path)
         skip_rows = [i for i in range(n + 3)]
-        header_list = ['conf_index', 'score', 'pen.', 'Area', 'as1', 'as2', 'as12', 'ACE', 'hydroph', 'Energy',
-                       'cluster', 'dist.', 'empty', 'Ligand Transformation']
-        self.df = pd.read_csv(scoring_file_path, delimiter='\s*\|', skiprows=skip_rows, header=None,
-                              names=header_list).drop(columns='empty')
+        header_list = ['conf_index', 'score', 'pen.', 'Area', 'as1', 'as2',
+                       'as12', 'ACE', 'hydroph', 'Energy', 'cluster', 'dist.',
+                       'Empty', 'Ligand Transformation']
+
+        df = pd.read_csv(scoring_file_path, delimiter='|',  header=None,
+                         skiprows=skip_rows, skipinitialspace=True)
+        assert df.shape[1] == len(header_list), "Invalid PatchDock scoring file," \
+                                                f"expected {len(header_list)}" \
+                                                f"columns, got {df.shape[1]}."
+        df.set_axis(header_list, axis=1, inplace=True)
+        self.df = df.drop(columns='Empty')
+
         logging.debug(f"Scoring file read {scoring_file_path}: \n {self.df} ")
 
     def __norm_scores(self):
         """
-        It normalizes the score being 1 the best (the highest value) and 0 the worst (the lowest value) and adds a new
-        column to self.df with the normalized score
+        It normalizes the score being 1 the best (the highest value) and 0 the
+        worst (the lowest value) and adds a new column to self.df with the
+        normalized score
         """
         scores = np.array(self.df.score)
-        self.df['norm_score'] = abs((scores - np.min(scores))) / (np.max(scores) - np.min(scores))
-        logging.debug(f"Normalizing scores using: scores - {np.min(scores)} / ( {np.max(scores)} - {np.min(scores)})")
+        min_sc = np.min(scores)
+        max_sc = np.max(scores)
+        self.df['norm_score'] = abs((scores - min_sc)) / (max_sc - min_sc)
+        logging.debug(f"Normalizing scores using: |scores - {min_sc} "
+                      f"/ ( {max_sc} - {min_sc})|")
 
     def __norm_ids(self):
         """
-        It normalizes the ids names (program_ + id number) and adds a new column to self.df with the normalized ids.
+        It normalizes the ids names (program_ + id number) and adds a new column
+        to self.df with the normalized ids.
         """
         self.df['norm_ids'] = f'{self.program}_' + self.df.conf_index.map(str)
 
@@ -151,7 +172,8 @@ class ParserPatchDock:
 
     def norm(self):
         """
-        It adds new columns to self.df normalizing scores and ids and finally sorts by norm_score in descending order.
+        It adds new columns to self.df normalizing scores and ids and finally
+        sorts by norm_score in descending order.
         """
         self.__norm_scores()
         self.__norm_ids()
@@ -159,13 +181,16 @@ class ParserPatchDock:
 
     def save(self, output_folder):
         """
-        It saves the normalized ids, the original score and the normalized score from self.df after being normalized
-        to a csv file.
+        It saves the normalized ids, the original score and the normalized
+        score from self.df after being normalized to a csv file.
         """
         columns_to_save = ['norm_ids', 'score', 'norm_score']
         header_names = ['ids', 'total_score', 'norm_score']
         if 'norm_score' not in self.df.columns:
-            message = "You must normalize (sc_parser.norm()) before saving the csv with the normalized score."
+            message = "You must normalize (sc_parser.norm()) before saving " \
+                      "the csv with the normalized score."
             raise AttributeError(message)
-        norm_score_file_path = os.path.join(output_folder, self.norm_score_filename)
-        self.df.to_csv(norm_score_file_path, columns=columns_to_save, header=header_names, index=False)
+        norm_score_file_path = os.path.join(output_folder,
+                                            self.norm_score_filename)
+        self.df.to_csv(norm_score_file_path, columns=columns_to_save,
+                       header=header_names, index=False)
