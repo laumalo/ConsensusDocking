@@ -107,7 +107,7 @@ def run_preprocessing(params, path, output_path, n_proc):
                 if not all([f in folders for f in folders_to_align]):
                     logging.error('Wrong selection of folders to align.')
                 else: 
-                    for folder, chains in folders_chian_to_align:
+                    for folder, chains in folder_chain_to_align:
                         chains_to_align = list(chains.split())
                         logging.info('         Aligment of {}:'.format(folder))
                         folder_path = os.path.join(path, folder)
