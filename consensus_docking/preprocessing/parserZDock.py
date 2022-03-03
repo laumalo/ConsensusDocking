@@ -43,7 +43,6 @@ class ParserZDock:
             raise FileNotFoundError("The following directory has not been "
                                     f"found: {new_working_dir}")
 
-
     @working_dir.getter
     def working_dir(self):
         return self._working_dir
@@ -70,7 +69,6 @@ class ParserZDock:
             logging.error(f"Please enter a valid score_filename that exists "
                           f"in {folder_path}. Keeping {self.score_filename}")
             raise FileNotFoundError(f"File not found in {file_path}")
-
 
     @score_filename.getter
     def score_filename(self):

@@ -21,9 +21,11 @@ class ParserRosetta:
         score_filename : str
             Name of the score file.
         """
-        self._working_dir = working_dir
+        self._working_dir = None
+        self.working_dir = working_dir
         self._program = 'rosetta'
-        self._score_filename = score_filename
+        self._score_filename = None
+        self.score_filename = score_filename
         self._norm_score_filename = f'{self.program}_norm_score.csv'
         self._df = None
 
@@ -106,7 +108,24 @@ class ParserRosetta:
         """
         scoring_file_path = os.path.join(self.working_dir, self.program,
                                          self.score_filename)
-        self.df = pd.read_csv(scoring_file_path, delimiter='\s+', skiprows=[0])
+        df = pd.read_csv(scoring_file_path, delim_whitespace=True, skiprows=[0])
+        col_df = df.columns
+        col_expected = ['SCORE:', 'total_score', 'rms', 'CAPRI_rank', 'Fnat',
+                        'I_sc', 'Irms', 'Irms_leg', 'cen_rms', 'dslf_fa13',
+                        'fa_atr', 'fa_dun', 'fa_elec', 'fa_intra_rep',
+                        'fa_intra_sol_xover4', 'fa_rep', 'fa_sol',
+                        'hbond_bb_sc', 'hbond_lr_bb', 'hbond_sc', 'hbond_sr_bb',
+                        'interchain_contact', 'interchain_env',
+                        'interchain_pair', 'interchain_vdw', 'lk_ball_wtd',
+                        'omega', 'p_aa_pp', 'pro_close', 'rama_prepro', 'ref',
+                        'st_rmsd', 'yhh_planarity', 'description']
+
+        for col in col_df:
+            if col not in col_expected:
+                logging.error("Invalid Rosetta scoring file.")
+                raise AssertionError(f"Invalid Rosetta scoring file. Column"
+                                     f" {col} is not expected")
+        self.df = df
         logging.debug(f"Scoring file read {scoring_file_path}: \n {self.df} ")
 
     def __norm_scores(self):
@@ -154,7 +173,7 @@ class ParserRosetta:
         if 'norm_score' not in self.df.columns:
             message = "You must normalize (sc_parser.norm()) before saving " \
                       "the csv with the normalized the data. "
-            raise AttributeError(message)
+            raise AssertionError(message)
         norm_score_file_path = os.path.join(output_folder,
                                             self.norm_score_filename)
         self.df.to_csv(norm_score_file_path, columns=columns_to_save,

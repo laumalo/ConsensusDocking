@@ -21,9 +21,11 @@ class ParserFroDock:
         score_filename : str
             Name of the score file.
         """
-        self._working_dir = working_dir
+        self._working_dir = None
+        self.working_dir = working_dir
         self._program = 'frodock'
-        self._score_filename = score_filename
+        self._score_filename = None
+        self.score_filename = score_filename
         self._norm_score_filename = f'{self.program}_norm_score.csv'
         self._df = None
 
@@ -131,9 +133,14 @@ class ParserFroDock:
         skip_rows = self.__find_starting_line(scoring_file_path)
         # skip_rows = [i for i in range(n+2)]
         header_list = ['rank_id', 'Euler1', 'Euler2', 'Euler3', 'posX', 'posY',
-                       'PosZ', 'correlation']
-        self.df = pd.read_csv(scoring_file_path, delimiter='\s+', header=None,
-                              skiprows=skip_rows, names=header_list)
+                       'posZ', 'correlation']
+        df = pd.read_csv(scoring_file_path, delim_whitespace=True, header=None,
+                         skiprows=skip_rows)
+        assert df.shape[1] == len(header_list), "Invalid FroDock scoring file," \
+                                                f"expected {len(header_list)}" \
+                                                f"columns, got {df.shape[1]}."
+        df.set_axis(header_list, axis=1, inplace=True)
+        self.df = df
         logging.debug(f"Scoring file read {scoring_file_path}: \n {self.df} ")
 
     def __norm_scores(self):
@@ -181,7 +188,7 @@ class ParserFroDock:
         if 'norm_score' not in self.df.columns:
             message = "You must normalize (sc_parser.norm()) before saving " \
                       "the csv with the normalized score."
-            raise AttributeError(message)
+            raise AssertionError(message)
         norm_score_file_path = os.path.join(output_folder,
                                             self.norm_score_filename)
         self.df.to_csv(norm_score_file_path, columns=columns_to_save,

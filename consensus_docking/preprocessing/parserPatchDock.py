@@ -21,9 +21,11 @@ class ParserPatchDock:
         score_filename : str
             Name of the score file.
         """
-        self._working_dir = working_dir
+        self._working_dir = None
+        self.working_dir = working_dir
         self._program = 'patchdock'
-        self._score_filename = score_filename
+        self._score_filename = None
+        self.score_filename = score_filename
         self._norm_score_filename = f'{self.program}_norm_score.csv'
         self._df = None
 
@@ -130,10 +132,16 @@ class ParserPatchDock:
         skip_rows = [i for i in range(n + 3)]
         header_list = ['conf_index', 'score', 'pen.', 'Area', 'as1', 'as2',
                        'as12', 'ACE', 'hydroph', 'Energy', 'cluster', 'dist.',
-                       'empty', 'Ligand Transformation']
-        self.df = pd.read_csv(scoring_file_path, delimiter='\s*\|',
-                              skiprows=skip_rows, header=None,
-                              names=header_list).drop(columns='empty')
+                       'Empty', 'Ligand Transformation']
+
+        df = pd.read_csv(scoring_file_path, delimiter='|',  header=None,
+                         skiprows=skip_rows, skipinitialspace=True)
+        assert df.shape[1] == len(header_list), "Invalid PatchDock scoring file," \
+                                                f"expected {len(header_list)}" \
+                                                f"columns, got {df.shape[1]}."
+        df.set_axis(header_list, axis=1, inplace=True)
+        self.df = df.drop(columns='Empty')
+
         logging.debug(f"Scoring file read {scoring_file_path}: \n {self.df} ")
 
     def __norm_scores(self):

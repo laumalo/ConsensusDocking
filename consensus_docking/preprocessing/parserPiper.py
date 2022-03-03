@@ -21,9 +21,11 @@ class ParserPiper:
         score_filename : str
             Name of the score file.
         """
-        self._working_dir = working_dir
+        self._working_dir = None
+        self.working_dir = working_dir
         self._program = 'piper'
-        self._score_filename = score_filename
+        self._score_filename = None
+        self.score_filename = score_filename
         self._norm_score_filename = f'{self.program}_norm_score.csv'
         self._df = None
 
@@ -109,8 +111,12 @@ class ParserPiper:
         header_list = ['rot_index', 'x_trans', 'y_trans', 'z_trans',
                        'total_score', 'repulsive_vdw', 'attractive_vdw',
                        'coulomb_elect', 'born_approx_elect', 'pairwise_potential']
-        self.df = pd.read_csv(scoring_file_path, delimiter='\s+', header=None,
-                              names=header_list)
+        df = pd.read_csv(scoring_file_path, delim_whitespace=True, header=None)
+        assert df.shape[1] == len(header_list), "Invalid PIPER scoring file," \
+                                                f"expected {len(header_list)}" \
+                                                f"columns, got {df.shape[1]}."
+        df.set_axis(header_list, axis=1, inplace=True)
+        self.df = df
         logging.debug(f"Scoring file read {scoring_file_path}: \n {self.df} ")
 
     def __norm_scores(self):
@@ -158,7 +164,7 @@ class ParserPiper:
         if 'norm_score' not in self.df.columns:
             message = "You must normalize (sc_parser.norm()) before saving " \
                       "the csv with the normalized score."
-            raise AttributeError(message)
+            raise AssertionError(message)
         norm_score_file_path = os.path.join(output_folder,
                                             self.norm_score_filename)
         self.df.to_csv(norm_score_file_path, columns=columns_to_save,
