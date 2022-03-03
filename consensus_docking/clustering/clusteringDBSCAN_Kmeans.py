@@ -4,6 +4,7 @@ import pandas as pd
 from collections import Counter, defaultdict
 from sklearn.cluster import KMeans, DBSCAN
 from sklearn.metrics import pairwise_distances_argmin_min
+from consensus_docking.analysis import NearNatives
 
 import logging
 import sys
@@ -19,11 +20,23 @@ class TwoStepsClustering(object):
     It initializates a TwoStepClustering class.
     """
     def __init__(self, encoding_file, n_clusters,
-                 eps_DBSCAN = 6, metric_DBSCAN = 'euclidean'): 
+                 eps_DBSCAN = 6, metric_DBSCAN = 'euclidean',
+                 near_native_analysis = False, rmsd_folder = None, 
+                 apply_consensus = False): 
+        
+        # Clustering variables
         self.encoding_file = encoding_file
         self.n_clusters = n_clusters 
         self.eps_DBSCAN = eps_DBSCAN
         self.metric_DBSCAN = metric_DBSCAN
+
+        # Near native analysis
+        if near_native_analysis is True and os.path.isdir(rmsd_folder):
+            self.near_native_structures = \
+                NearNatives().extract_near_natives(rmsd_folder)
+
+        # Consensus criteria
+        self.apply_consensus = apply_consensus
 
 
     def get_coords_names(self): 
@@ -181,6 +194,12 @@ class TwoStepsClustering(object):
                 for k,v in d_coods_names.items(): 
                     if np.all(v == coord_centroid):
                         representative_structures.append(os.path.basename(k))
+
+            # Near natives analysis in KMeans cluster
+            if self.near_native_analysis:
+                NearNatives().near_natives_in_clusters(
+                    self.near_native_structures, d_kmeans)
+            
             d_clustering = {**d_clustering, **d_kmeans}
 
         return d_clustering, representative_structures
@@ -220,12 +239,17 @@ class TwoStepsClustering(object):
         It runs the clustering pipeline based on the DBSCAN-Kmeans two-step 
         clustering.
         """
-
+        
         # DBSCAN clustering
         coords,file_names = self.get_coords_names()
         logging.info('STEP ONE: DBSCAN clustering')
         d_dbscan, selected_labels = self.DBSCAN_step(coords, file_names)
         
+        # Near natives analysis in DBSCAN
+        if self.near_native_analysis:
+            NearNatives().near_natives_in_clusters(self.near_native_structures,
+                                                   d_dbscan)
+
         # K-Means clustering
         logging.info('STEP TWO: K-MEANS clustering')
         d_clustering, representative_structures = \
@@ -242,4 +266,12 @@ class TwoStepsClustering(object):
                  'Structures' : d_clustering[cluster_label]}
 
         # Consensus criteria
-        self.apply_consensus(d_results)
+        if self.self.apply_consensus:
+            self.apply_consensus(d_results)
+        
+        # Log representative structures
+        else:
+            for k,v in d_results.items(): 
+                logging.info(
+                    f"     - {k} \t Representative:{v['Representative']}" +  
+                    f" \t Population: {v['Population']}."
