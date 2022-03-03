@@ -125,7 +125,7 @@ class _Filter(object):
             filtered_structures = self.filtered_structures
 
         df_encoding = pd.read_csv(encoding_file)
-        df_filtered = df[df['File'].isin(filtered_structures)]
+        df_filtered = df_encoding[df_encoding['File'].isin(filtered_structures)]
 
         out_file = file_filtered.replace('.csv', '_filtered.csv')
         df_filtered.to_csv(out_file)
