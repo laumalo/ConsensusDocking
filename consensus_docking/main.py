@@ -22,8 +22,6 @@ def parse_args(args):
         It contains the command-line arguments that are supplied by the user
     """
     parser = ap.ArgumentParser()
-    parser.add_argument("path", type=str,
-                        help="Path to dockings results folder.")
     parser.add_argument("conf_file", type=str,
                         help="Configuration file.")
     parser.add_argument("-c", "--n_proc", type=int,
@@ -49,7 +47,8 @@ def parse_conf_file(conf_file):
         Configuration parameters for all the blocks.
     """
 
-    AVAILABLE_BLOCKS = ['preprocessing', 'encoding', 'clustering', 'analysis']
+    AVAILABLE_BLOCKS = \
+        ['paths','preprocessing', 'encoding', 'clustering', 'analysis']
     
     config = configparser.ConfigParser()
     config.read(conf_file)
@@ -249,7 +248,7 @@ def run_analysis(params, path, output_path, n_pro):
     pass 
 
 
-def outputs_handler(path): 
+def outputs_handler(params): 
     """
     It handles the output paths. 
 
@@ -259,7 +258,7 @@ def outputs_handler(path):
         Dockings path.
     """
 
-    output_path = os.path.join(path, 'output')
+    output_path = os.path.join(params['input_data'], params['output'])
     os.makedirs(output_path, exist_ok = True)
 
     preprocessing_output = os.path.join(output_path, 'preprocessing')
@@ -287,12 +286,15 @@ def main(args):
     args : argparse.Namespace
         It contains the command-line arguments that are supplied by the user
     """
+    # Parse configuration file
+    blocks, params = parse_conf_file(args.conf_file)
     
     # Check docking conformations
     AVAILABLE_PROGRAMS = ['ftdock', 'zdock', 'lightdock', 'frodock',
                           'patchdock', 'piper', 'rosetta']
-    ignored_folders = ['output']
-    programs = [p for p in os.listdir(args.path) if not p in ignored_folders] 
+    ignored_folders = ['output', params['paths']['output']]
+    programs = [p for p in os.listdir(params['paths']['input_data']) 
+                if not p in ignored_folders] 
     checker = all([program in AVAILABLE_PROGRAMS for program in programs])
     if not checker:
         logging.error('Wrong docking program.')
@@ -300,24 +302,21 @@ def main(args):
     else:
         # Handle outputs
         preprocessing_output, encodings_output, clustering_output, \
-            analysis_output = outputs_handler(args.path)
-
-        # Parse configuration file
-        blocks, params = parse_conf_file(args.conf_file)
+            analysis_output = outputs_handler(params['paths'])
         
         # Run the diferent blocks of the workflow
         for block in blocks:
             if block == 'preprocessing': 
-                run_preprocessing(params[block], args.path,
+                run_preprocessing(params[block],params['paths']['input_data'],
                                   preprocessing_output, args.n_proc)
             if block == 'encoding': 
-                run_encoding(params[block], args.path,
+                run_encoding(params[block], params['paths']['input_data'],
                              encodings_output, args.n_proc)
             if block == 'clustering': 
-                run_clustering(params[block], args.path,
+                run_clustering(params[block], params['paths']['input_data'],
                                clustering_output, args.n_proc)
             if block == 'analysis': 
-                run_analysis(params[block], args.path,
+                run_analysis(params[block], params['paths']['input_data'],
                          analysis_output, args.n_proc)
 
 
