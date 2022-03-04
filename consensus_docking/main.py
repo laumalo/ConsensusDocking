@@ -259,7 +259,9 @@ def outputs_handler(params):
     path : str
         Dockings path.
     """
-
+    global preprocessing_output, encodings_output, clustering_output, \
+           analysis_output
+           
     output_path = os.path.join(params['input_data'], params['output'])
     os.makedirs(output_path, exist_ok = True)
 
