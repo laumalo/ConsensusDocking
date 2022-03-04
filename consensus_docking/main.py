@@ -123,7 +123,7 @@ def run_preprocessing(params, path, output_path, n_proc):
             else:
                 logging.info('     Parsing scoring files.')
                 folders_to_parse = \
-                    [folder.strip() for folder in list(params['parse']
+                    [folder.strip() for folder in list(params['parser']
                         .split(','))]
                 folders_file_to_parse = \
                     zip(folders_to_parse, 
