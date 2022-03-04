@@ -103,7 +103,7 @@ def run_preprocessing(params, path, output_path, n_proc):
                     .split(','))]
                 folder_chain_to_align = \
                     [list(f.split('_')) for f in folders_to_align]
-                if not all([f in folders for f in folders_to_align]):
+                if not all([f in folders for f, c in folder_chain_to_align]):
                     logging.error('Wrong selection of folders to align.')
                 else: 
                     for folder, chains in folder_chain_to_align:
@@ -123,7 +123,7 @@ def run_preprocessing(params, path, output_path, n_proc):
             else:
                 logging.info('     Parsing scoring files.')
                 folders_to_parse = \
-                    [folder.strip() for folder in list(params['parse']
+                    [folder.strip() for folder in list(params['parser']
                         .split(','))]
                 folders_file_to_parse = \
                     zip(folders_to_parse, 
@@ -223,16 +223,21 @@ def run_clustering(params, path, output_path, n_proc):
     else: 
         if params['clustering_algorithm'] == 'DBSCAN-Kmeans':
             logging.info('  Running Two-Step clustering algorithm.')
+            
             # Optional parameters
             DEFAULT_CLUSTERS = 30
             DEFAULT_EPS_DBSCAN = 6
             DEFAULT_DBSCAN_METRIC = 'euclidian'
+            DEFAULT_NN_ANALYSIS = False
             n_clusters = int(params['n_clusters']) if 'n_clusters' in params \
                          else DEFAULT_CLUSTERS
             eps_DBSCAN = int(params['eps_DBSCAN']) if 'eps_DBSCAN' in params \
                          else DEFAULT_EPS_DBSCAN
             metric_DBSCAN =  params['metric_DBSCAN'] if 'metric_DBSCAN' \
                              in params else DEFAULT_DBSCAN_METRIC
+            near_native_analysis =  bool(params['near_natives_analysis']) if \
+                                    'near_natives_analysis' in params \
+                                    else DEFAULT_NN_ANALYSIS            
             
             # Clustering
             from consensus_docking.clustering import TwoStepsClustering 
@@ -240,7 +245,9 @@ def run_clustering(params, path, output_path, n_proc):
                 encoding_file = params['encoding_file'],
                 n_clusters = n_clusters,
                 eps_DBSCAN = eps_DBSCAN,
-                metric_DBSCAN = metric_DBSCAN)
+                metric_DBSCAN = metric_DBSCAN, 
+                near_native_analysis = near_native_analysis,
+                rmsd_folder = os.path.join(analysis_output, 'rmsd'))
             clustering.run()
                            
 
@@ -255,8 +262,10 @@ def outputs_handler(params):
     Parameters
     ----------
     path : str
-        Dockings path.
+        Docking data path.
     """
+    global preprocessing_output, encodings_output, clustering_output, \
+           analysis_output
 
     output_path = os.path.join(params['input_data'], params['output'])
     os.makedirs(output_path, exist_ok = True)
@@ -272,7 +281,6 @@ def outputs_handler(params):
 
     analysis_output = os.path.join(output_path, 'analysis')
     os.makedirs(analysis_output, exist_ok = True)
-
 
     return preprocessing_output, encodings_output, \
            clustering_output, analysis_output

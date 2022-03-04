@@ -31,9 +31,12 @@ class TwoStepsClustering(object):
         self.metric_DBSCAN = metric_DBSCAN
 
         # Near native analysis
+        self.near_native_analysis = near_native_analysis
         if near_native_analysis is True and os.path.isdir(rmsd_folder):
             self.near_native_structures = \
                 NearNatives().extract_near_natives(rmsd_folder)
+            print(self.near_native_structures)
+
 
         # Consensus criteria
         self.apply_consensus = apply_consensus
@@ -205,7 +208,7 @@ class TwoStepsClustering(object):
         return d_clustering, representative_structures
 
 
-    def apply_consensus(self, d, NUMBER_OF_SOFTWARES = 5): 
+    def apply_consensus_criteria(self, d, NUMBER_OF_SOFTWARES = 5): 
         """
         It applies the consensus criteria to prioritize clusters with structures
         from all the softwares. 
@@ -266,12 +269,12 @@ class TwoStepsClustering(object):
                  'Structures' : d_clustering[cluster_label]}
 
         # Consensus criteria
-        if self.self.apply_consensus:
-            self.apply_consensus(d_results)
+        if self.apply_consensus:
+            self.apply_consensus_criteria(d_results)
         
         # Log representative structures
         else:
             for k,v in d_results.items(): 
                 logging.info(
                     f"     - {k} \t Representative:{v['Representative']}" +  
-                    f" \t Population: {v['Population']}."
+                    f" \t Population: {v['Population']}.")
