@@ -184,7 +184,7 @@ def run_encoding(params, path, output_path, n_proc):
                     encoder = Encoder(folder, chain, path)
                     encoder.run_encoding(
                       output = '{}/encoding_{}.csv'.format(output_path, folder),
-                      n_proc=n_proc, 
+                      n_proc=n_proc,                      
                       score_file = '{}/{}_norm_score.csv'
                                    .format(preprocessing_output, folder))
 
