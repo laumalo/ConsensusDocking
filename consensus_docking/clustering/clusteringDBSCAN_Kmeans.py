@@ -35,7 +35,6 @@ class TwoStepsClustering(object):
         if near_native_analysis is True and os.path.isdir(rmsd_folder):
             self.near_native_structures = \
                 NearNatives().extract_near_natives(rmsd_folder)
-            print(self.near_native_structures)
 
 
         # Consensus criteria
@@ -175,9 +174,11 @@ class TwoStepsClustering(object):
             file_names = [name[0] for name in df_filtered[['File']].values]
             
             d_kmeans = defaultdict(list)
+            d = {}
             for file_name, label_model in zip(file_names, model.labels_): 
                 cluster_label = 'cluster_{}_{}'.format(label, label_model)
                 d_kmeans[cluster_label].append(os.path.basename(file_name))
+                d[file_name] = label_model
 
             names = df_filtered[['File']].values
             coords = df_filtered[
@@ -201,7 +202,7 @@ class TwoStepsClustering(object):
             # Near natives analysis in KMeans cluster
             if self.near_native_analysis:
                 NearNatives().near_natives_in_clusters(
-                    self.near_native_structures, d_kmeans)
+                    self.near_native_structures, d)
             
             d_clustering = {**d_clustering, **d_kmeans}
 

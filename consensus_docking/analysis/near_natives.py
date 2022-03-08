@@ -92,7 +92,6 @@ class NearNatives(object):
 		        nn_in_cluster.append(cluster_dict[pose])
 		    except Exception: 
 		        continue
-
 		logging.info(collections.Counter(map(int,nn_in_cluster)))
 
 
