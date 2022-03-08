@@ -212,7 +212,7 @@ class Encoder(object):
                         float(df_score[df_score.ids == encoding_id].norm_score)
                 else:
                     logging.warning(f'No ids from norm_score coincided with ' + 
-                                     'file: {file_names[i]}. Setting 0 value.')
+                                    f'file: {file_names[i]}. Setting 0 value.')
 
         # Export output file
         df_encoding.to_csv(output, index=False)

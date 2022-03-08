@@ -103,6 +103,7 @@ def run_preprocessing(params, path, output_path, n_proc):
                     .split(','))]
                 folder_chain_to_align = \
                     [list(f.split('_')) for f in folders_to_align]
+                    
                 if not all([f in folders for f, c in folder_chain_to_align]):
                     logging.error('Wrong selection of folders to align.')
                 else: 
@@ -268,7 +269,11 @@ def outputs_handler(params):
     """
     global preprocessing_output, encodings_output, clustering_output, \
            analysis_output
+<<<<<<< HEAD
 
+=======
+           
+>>>>>>> master
     output_path = os.path.join(params['input_data'], params['output'])
     os.makedirs(output_path, exist_ok = True)
 

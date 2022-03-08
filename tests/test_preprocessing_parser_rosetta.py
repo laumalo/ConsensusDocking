@@ -8,7 +8,7 @@ from .utils import *
 def parser():
     dir_name = os.path.dirname(__file__)
     base_dir = os.path.join(dir_name, 'data')
-    return ParserRosetta(working_dir=base_dir, score_filename='dock.sc')
+    return ParserRosetta(working_dir=base_dir, score_filename='dock.txt')
 
 
 @pytest.fixture
