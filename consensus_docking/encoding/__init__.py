@@ -1,3 +1,3 @@
 # __init__.py
 from .encoder import Encoder
-from .encoding import Encoding
+from .encoding import ParserEncoding

@@ -8,8 +8,8 @@ logging.basicConfig(
     level=logging.INFO, stream=sys.stdout)
 
 
-class Encoding(object):
-    """Encoding object"""
+class ParserEncoding(object):
+    """ParserEncoding object"""
 
     def __init__(self):
         """

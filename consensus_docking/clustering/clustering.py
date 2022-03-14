@@ -6,7 +6,7 @@ import sys
 import logging
 import numpy as np
 import pandas as pd
-from consensus_docking.encoding import Encoding
+from consensus_docking.encoding import ParserEncoding
 
 logging.basicConfig(format='%(asctime)s [%(module)s] - %(levelname)s: %(message)s', datefmt='%d-%b-%y %H:%M:%S',
                     level=logging.INFO, stream=sys.stdout)
@@ -131,7 +131,7 @@ class Clustering:
         -------
         DataFrame with the nine coordinates in the encoding file.
         """
-        parser = Encoding()
+        parser = ParserEncoding()
         parser.from_csv(self.encoding_file_path)
         return parser.get_coord()
 
@@ -143,7 +143,7 @@ class Clustering:
         -------
         DataFrame with the nine coordinates and the normalized score in the encoding file.
         """
-        parser = Encoding()
+        parser = ParserEncoding()
         parser.from_csv(self.encoding_file_path)
         return parser.get_coord_norm_sc()
 
@@ -160,7 +160,7 @@ class Clustering:
         -------
         DataFrame with the selected columns information in the encoding file.
         """
-        parser = Encoding()
+        parser = ParserEncoding()
         parser.from_csv(self.encoding_file_path)
         return parser.get_columns_by_name(selected_columns)
 
@@ -175,7 +175,7 @@ class Clustering:
         -------
         List of str with the ids for each pose.
         """
-        parser = Encoding()
+        parser = ParserEncoding()
         parser.from_csv(self.encoding_file_path)
         return parser.get_ids_by_row(index_list)
 
@@ -323,7 +323,7 @@ class Clustering:
         save_path : str
             Path to the folder in which we want to save the filtered encoding.
         """
-        encoding = Encoding()
+        encoding = ParserEncoding()
         encoding.from_csv(self.encoding_file_path)
         filtered_encoding = encoding.df[self.labels == cluster_id]
         filename = os.path.join(save_path, f'encoding_{self.clustering_method}_cluster_id_{cluster_id}.csv')
