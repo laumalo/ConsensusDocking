@@ -8,7 +8,7 @@ import scipy.spatial as spatial
 from biopandas.pdb import PandasPdb
 import linecache
 import logging
-import sys 
+import sys
 
 logging.basicConfig(
     format='%(asctime)s [%(module)s] - %(levelname)s: %(message)s',
@@ -16,12 +16,11 @@ logging.basicConfig(
     level=logging.INFO, stream=sys.stdout)
 
 
-class Encoder(object):
+class Encoder:
     """ Encoder object """
-    
-    def __init__(self, docking_program, chain, dockings_path = os.getcwd()):
+    def __init__(self, docking_program, chain, docking_path=os.getcwd()):
         """
-        In initialices an Encoder object. 
+        It initializes an Encoder object.
 
         Parameters
         ----------
@@ -32,10 +31,9 @@ class Encoder(object):
         docking_path : str
             Path to the docking folder. Default: working directory. 
         """
-        self.path = dockings_path
+        self.path = docking_path
         self.docking_program = docking_program.lower()
         self.chain = chain
-        
 
     def get_most_dist_points(self, data, K, MAX_LOOPS=20):
         """
@@ -72,19 +70,19 @@ class Encoder(object):
             return np.linalg.norm(ndarray_0 - ndarray_1, axis=1)
 
         indices = np.argsort(distances(data, data.mean(0)))[:K].copy()
-        distsums = spatial.distance.cdist(data, data[indices]).sum(1)
-        distsums[indices] = -np.inf
+        dist_sums = spatial.distance.cdist(data, data[indices]).sum(1)
+        dist_sums[indices] = -np.inf
         prev_sum = 0.0
         for loop in range(MAX_LOOPS):
             for i in range(K):
                 old_index = indices[i]
-                distsums[old_index] = \
+                dist_sums[old_index] = \
                     distances(data[indices], data[old_index]).sum()
-                distsums -= distances(data, data[old_index])
-                new_index = np.argmax(distsums)
+                dist_sums -= distances(data, data[old_index])
+                new_index = np.argmax(dist_sums)
                 indices[i] = new_index
-                distsums[new_index] = -np.inf
-                distsums += distances(data, data[new_index])
+                dist_sums[new_index] = -np.inf
+                dist_sums += distances(data, data[new_index])
             curr_sum = spatial.distance.pdist(data[indices]).sum()
             if curr_sum == prev_sum:
                 break
@@ -109,8 +107,8 @@ class Encoder(object):
         """
         pdb_path = os.path.join(self.path, self.docking_program, pdb)
         ppdb = PandasPdb().read_pdb(pdb_path)
-        df = ppdb.df['ATOM'][ppdb.df['ATOM']['atom_name'] == 'CA']\
-             [ppdb.df['ATOM']['chain_id'] == chain]
+        df = ppdb.df['ATOM'][ppdb.df['ATOM']['atom_name'] == 'CA'] \
+            [ppdb.df['ATOM']['chain_id'] == chain]
         coords = df[['x_coord', 'y_coord', 'z_coord']].values
         dist_atoms = self.get_most_dist_points(coords, K=3)
         return df.iloc[dist_atoms]
@@ -137,8 +135,6 @@ class Encoder(object):
         except Exception:
             logging.warning('Skipping file {}.'.format(file_name))
 
-    
-
     def run_encoding(self, output, score_file=None, n_proc=1):
         """
         It runs the encoding of all the conformations found in the output
@@ -148,8 +144,8 @@ class Encoder(object):
         ----------
         output : str
             Path to the output CSV file to save the encoding.
-        norm_scores_file : str
-            Path to the files containing the normalized scorings. 
+        score_file : str
+            Path to the file containing the normalized scores.
         n_proc : int
             Number of processors.
         """
@@ -162,12 +158,12 @@ class Encoder(object):
         # Initialize array 
         file_paths = \
             [f'{os.path.join(self.path, self.docking_program, f)}'
-            for f in os.listdir(os.path.join(self.path, self.docking_program))
-            if f.endswith(".pdb")]
+             for f in os.listdir(os.path.join(self.path, self.docking_program))
+             if f.endswith(".pdb")]
         file_names = \
             [f'{os.path.splitext(f)[0]}'
-            for f in os.listdir(os.path.join(self.path, self.docking_program))
-            if f.endswith(".pdb")]
+             for f in os.listdir(os.path.join(self.path, self.docking_program))
+             if f.endswith(".pdb")]
 
         array = Array('d', np.zeros((len(file_paths) * 11)), lock=False)
 
@@ -177,17 +173,17 @@ class Encoder(object):
 
         # Encoding
         encode_file_paral = partial(self.encode_file, atom_lines=[i, j, k])
-        
+
         Pool(n_proc, initializer=init_arr, initargs=(array,)).map(
             encode_file_paral, enumerate(file_paths))
 
         # Save all the encoded coordinates into a dataframe
         encoding = \
             np.frombuffer(array, dtype=float).reshape(len(file_paths), 11)
-        df_encoding = pd.DataFrame(
-                        encoding.astype(str),
-                        columns = ['ids', 'norm_score', 'x1', 'y1', 'z1',
-                                   'x2', 'y2', 'z2', 'x3', 'y3', 'z3'])
+        df_encoding = pd.DataFrame(encoding.astype(str),
+                                   columns=['ids', 'norm_score', 'x1', 'y1',
+                                            'z1', 'x2', 'y2', 'z2', 'x3', 'y3',
+                                            'z3'])
 
         # Parse names and scorings for each file
         if score_file is None or not os.path.exists(score_file):
@@ -196,7 +192,7 @@ class Encoder(object):
                                 f' so energies won\'t be added to {output}')
             elif not os.path.exists(score_file):
                 logging.warning(f'{score_file} was NOT FOUND.')
-            
+
             for i, row in df_encoding.iterrows():
                 encoding_id = file_names[i]
                 df_encoding.at[i, 'ids'] = encoding_id
@@ -211,7 +207,7 @@ class Encoder(object):
                     df_encoding.at[i, 'norm_score'] = \
                         float(df_score[df_score.ids == encoding_id].norm_score)
                 else:
-                    logging.warning(f'No ids from norm_score coincided with ' + 
+                    logging.warning(f'No ids from norm_score coincided with ' +
                                     f'file: {file_names[i]}. Setting 0 value.')
 
         # Export output file
