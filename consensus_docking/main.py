@@ -256,7 +256,36 @@ def run_clustering(params, path, output_path, n_proc):
             clustering.run()
                            
 
-def run_analysis(params, path, output_path, n_pro): 
+
+def run_filtering(params, path, output_path):
+    """
+    It runs the filtering block. 
+
+    Parameters
+    ----------
+    params : condifparser object
+        Configuration parameters to run the filtering.
+    path : str
+        Path to the working folder. 
+    """
+    if params['method'] == 'MASIF':
+        from consensus_docking.filtering import FilterMASIF
+        for program in programs:
+            masif = FilterMASIF(os.path.join(path, program),
+                                params['patches_proteinA'],
+                                params['patches_proteinB'])
+            output_filtering = os.path.join(output_path,
+                                            f'filtering_{program}.csv')
+            masif.run_filtering(output_filtering)
+            masif.filter_encoding_file(
+                encoding_file = os.path.join(encodings_output,
+                                f'encoding_{program}.csv'), 
+                file_filtered = output_filtering)
+    else:
+        raise NotImplementedError 
+ 
+    
+def run_analysis(params, path, output_path): 
     pass 
 
 
@@ -287,7 +316,6 @@ def outputs_handler(params):
     analysis_output = os.path.join(output_path, 'analysis')
     os.makedirs(analysis_output, exist_ok = True)
 
-
     return preprocessing_output, encodings_output, \
            clustering_output, analysis_output
 
@@ -300,6 +328,8 @@ def main(args):
     args : argparse.Namespace
         It contains the command-line arguments that are supplied by the user
     """
+    global programs 
+
     # Parse configuration file
     blocks, params = parse_conf_file(args.conf_file)
     
@@ -326,12 +356,15 @@ def main(args):
             if block == 'encoding': 
                 run_encoding(params[block], params['paths']['input_data'],
                              encodings_output, args.n_proc)
+            if block == 'filtering':
+                run_filtering(params[block], params['paths']['input_data'], 
+                              preprocessing_output)
             if block == 'clustering': 
                 run_clustering(params[block], params['paths']['input_data'],
                                clustering_output, args.n_proc)
             if block == 'analysis': 
                 run_analysis(params[block], params['paths']['input_data'],
-                         analysis_output, args.n_proc)
+                         analysis_output)
 
 
 if __name__ == '__main__':
