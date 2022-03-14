@@ -52,7 +52,7 @@ class _Filter(object):
         Returns
         -------
         coords : list
-            CA coordinates. 
+            CA coordinateobjects. 
         """
         df =  ppdb.df['ATOM'][ppdb.df['ATOM']['chain_id'] == chain] \
               [ppdb.df['ATOM']['atom_name'] == 'CA'][ppdb.df['ATOM'] \
@@ -119,15 +119,14 @@ class _Filter(object):
         if file_filtered:
             with open(file_filtered, 'r') as f: 
                 lines = f.readlines()
-                filtered_structures = [line.replace('\n', '') 
-                                       for line in lines if not 'gpfs' in line]
+                filtered_structures = [line.replace('\n', '') for line in lines]
         else: 
             filtered_structures = self.filtered_structures
 
         df_encoding = pd.read_csv(encoding_file)
         df_filtered = df_encoding[df_encoding['File'].isin(filtered_structures)]
 
-        out_file = file_filtered.replace('.csv', '_filtered.csv')
+        out_file = encoding_file.replace('.csv', '_filtered.csv')
         df_filtered.to_csv(out_file)
 
     def run(self, d_proteinA, d_proteinB, filter_distance, output , n_proc = 1):
