@@ -306,9 +306,9 @@ def main(args):
     # Check docking conformations
     AVAILABLE_PROGRAMS = ['ftdock', 'zdock', 'lightdock', 'frodock',
                           'patchdock', 'piper', 'rosetta']
-    ignored_folders = ['output', params['paths']['output']]
+    ignored_folders = [params['paths']['output']]
     programs = [p for p in os.listdir(params['paths']['input_data']) 
-                if not p in ignored_folders] 
+                if not p in ignored_folders and if not p.startswith('output')] 
     checker = all([program in AVAILABLE_PROGRAMS for program in programs])
     if not checker:
         logging.error('Wrong docking program.')
