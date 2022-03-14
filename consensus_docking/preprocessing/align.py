@@ -12,6 +12,8 @@ import mdtraj as md
 import logging
 import sys
 import os
+import shutil
+import tempfile
 
 logging.basicConfig(format=
                     '%(asctime)s [%(module)s] - %(levelname)s: %(message)s',
@@ -280,19 +282,25 @@ class Aligner:
             True if you want to remove the unaligned structure.
         """
         # Atoms to align 
-        atoms_to_align_query = self.__get_atoms_to_align(query_structure, chains)
+        atoms_to_align_query = self.__get_atoms_to_align(query_structure,
+                                                         chains)
 
         # Superposition of selected chains
         query_traj = md.load(query_structure)
         query_traj.superpose(self.traj_ref,
                              atom_indices=atoms_to_align_query,
                              ref_atom_indices=self.atoms_to_align_ref)
-        output_path = query_structure.replace('.pdb', '_align.pdb')
-
+        
         # Export aligned structure
-        query_traj.save(output_path)
         if remove:
-            os.remove(query_structure)
+            with tempfile.NamedTemporaryFile(suffix='.pdb') as tmp:
+                query_traj.save(tmp.name)
+                os.remove(query_structure)
+                shutil.copy(tmp.name, query_structure)
+        else: 
+            output_path = query_structure.replace('.pdb', '_align.pdb')
+            query_traj.save(output_path)
+
 
     def run_aligment(self, path, chains, n_proc=1, remove=True, prefix_file=''):
         """
