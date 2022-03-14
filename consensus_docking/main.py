@@ -308,7 +308,7 @@ def main(args):
                           'patchdock', 'piper', 'rosetta']
     ignored_folders = [params['paths']['output']]
     programs = [p for p in os.listdir(params['paths']['input_data']) 
-                if not p in ignored_folders and if not p.startswith('output')] 
+                if not p in ignored_folders and not p.startswith('output')] 
     checker = all([program in AVAILABLE_PROGRAMS for program in programs])
     if not checker:
         logging.error('Wrong docking program.')
