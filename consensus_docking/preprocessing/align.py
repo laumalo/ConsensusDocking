@@ -265,13 +265,32 @@ class Aligner:
         return np.concatenate(atoms_align_chains)
 
     def _checker(self, files, chains): 
-        reference_traj = self.traj_ref
+        """
+        It checks if the structures in a folder are already aligned to the 
+        reference structure. It assumes all the structures within the folder 
+        are aligned with each other. 
+
+        Parameters
+        ----------
+        files : list
+            List of files. 
+        Chains : list
+            Chains to align. 
+
+        Returns
+        -------
+        check : bool
+            True if the structures need to be aligned.
+        """   
+        import copy 
+
+        # Select one file out of files
         check_structure = files[0]
         atoms_to_align_query = self.__get_atoms_to_align(check_structure,
                                                          chains)
         # Superposition of selected chains
-        query_traj_to_align = md.load(check_structure)
         query_traj = md.load(check_structure)
+        query_traj_to_align = copy.deepcopy(query_traj)
         query_traj_to_align.superpose(self.traj_ref,
                              atom_indices=atoms_to_align_query,
                              ref_atom_indices=self.atoms_to_align_ref)
@@ -279,6 +298,37 @@ class Aligner:
             return False
         else:
             return True
+
+    def _set_correct_chain_names(self, pdb, original_chains):
+        """
+        It checks that the chain id of the output PDB file generated corresponds
+        to the input PDB. If not, it corrects the chain id names.
+
+        Parameters
+        ----------
+        pdb : str
+            Path to the generated PDB file. 
+        original_chains : list
+            List of chain's ids.
+        """
+        
+        from consensus_docking.utils import get_chains_ids
+        from Bio.PDB import PDBParser, PDBIO
+
+        chains_pdb = get_chains_ids(pdb)
+
+        if not chains_pdb == original_chains:
+            renames = {old:new for old,new in zip(chains_pdb, original_chains)}
+            with tempfile.NamedTemporaryFile(suffix='.pdb') as tmp:
+                # Load structure and replace chain ids
+                structure = PDBParser().get_structure(pdb)
+                chain.id = renames.get(chain.get_id())
+                
+                # Save structures
+                PDBIO().set_structure(structure)
+                PDBID().save(tmp.name)
+                os.remove(pdb)
+                shutil.copy(tmp.name, pdb)
 
 
     def align(self, query_structure, chains, remove=True):
@@ -298,6 +348,8 @@ class Aligner:
         remove : bool
             True if you want to remove the unaligned structure.
         """
+        from consensus_docking.utils import get_chains_ids
+        
         # Atoms to align 
         atoms_to_align_query = self.__get_atoms_to_align(query_structure,
                                                          chains)
@@ -309,14 +361,16 @@ class Aligner:
                              ref_atom_indices=self.atoms_to_align_ref)
         
         # Export aligned structure
-        if remove:
-            with tempfile.NamedTemporaryFile(suffix='.pdb') as tmp:
-                query_traj.save(tmp.name)
+        with tempfile.NamedTemporaryFile(suffix='.pdb') as tmp:
+            query_traj.save(tmp.name)
+            self._set_correct_chain_names(tmp.name,
+                                          get_chains_ids(query_structure))
+            if remove:
                 os.remove(query_structure)
                 shutil.copy(tmp.name, query_structure)
-        else: 
-            output_path = query_structure.replace('.pdb', '_align.pdb')
-            query_traj.save(output_path)
+            else: 
+                output_path = query_structure.replace('.pdb', '_align.pdb')
+                qshutil.copy(tmp.name, output_path)
 
 
     def run_aligment(self, path, chains, n_proc=1, remove=True, prefix_file=''):

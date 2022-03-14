@@ -23,3 +23,12 @@ def get_chains_dict(pdb):
                 list(unique_everseen([line[21:22] for line in f.readlines() 
                      if line.startswith('ATOM') or line.startswith('HETATOM')]))
         return {id:index for id,index in zip(chains_pdb_ids, chain_indices)} 
+
+def get_chains_ids(pdb): 
+        from more_itertools import unique_everseen
+
+        with open(pdb, 'r') as f: 
+            chains_pdb_ids = \
+                list(unique_everseen([line[21:22] for line in f.readlines() 
+                     if line.startswith('ATOM') or line.startswith('HETATOM')]))
+        return chains_pdb_ids
