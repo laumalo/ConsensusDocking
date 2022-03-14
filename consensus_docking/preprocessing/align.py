@@ -264,6 +264,23 @@ class Aligner:
             atoms_align_chains.append(atoms_to_align)
         return np.concatenate(atoms_align_chains)
 
+    def _checker(self, files, chains): 
+        reference_traj = self.traj_ref
+        check_structure = files[0]
+        atoms_to_align_query = self.__get_atoms_to_align(check_structure,
+                                                         chains)
+        # Superposition of selected chains
+        query_traj_to_align = md.load(check_structure)
+        query_traj = md.load(check_structure)
+        query_traj_to_align.superpose(self.traj_ref,
+                             atom_indices=atoms_to_align_query,
+                             ref_atom_indices=self.atoms_to_align_ref)
+        if md.rmsd(query_traj, query_traj_to_align)[0] * 10 < 0.1:
+            return False
+        else:
+            return True
+
+
     def align(self, query_structure, chains, remove=True):
         """
         It aligns a structure using MdTraj implementation. 
@@ -325,9 +342,14 @@ class Aligner:
                  os.listdir(path) if (file.endswith('.pdb') and
                                       file.startswith(prefix_file))]
 
-        # Function to be parallelized
-        align_structures_paral = partial(self.align, chains=chains,
-                                         remove=remove)
+        # Check if the stuctures are already algined
+        if self._checker(files, chains):
+            # Function to be parallelized
+            align_structures_paral = partial(self.align, chains=chains,
+                                             remove=remove)
 
-        with Pool(n_proc) as p:
-            list(p.imap(align_structures_paral, files))
+            with Pool(n_proc) as p:
+                list(p.imap(align_structures_paral, files))
+        else: 
+            logging.warning(
+                '           Query and ref proteins were already aligned.')
