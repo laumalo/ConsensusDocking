@@ -177,16 +177,26 @@ def run_encoding(params, path, output_path, n_proc):
                 [f in available_folders for f,c in folder_chain_to_encode]):
                 logging.error('Wrong selection of folders to encode.')
             else:
-                for folder, chain in folder_chain_to_encode: 
-                    logging.info('     Encoding {} to {}'.format(folder,
-                        '{}/encoding_{}.csv'.format(output_path, folder)))
-                    
-                    encoder = Encoder(folder, chain, path)
-                    encoder.run_encoding(
-                      output = '{}/encoding_{}.csv'.format(output_path, folder),
-                      n_proc=n_proc,                      
-                      score_file = '{}/{}_norm_score.csv'
-                                   .format(preprocessing_output, folder))
+                for folder, chain in folder_chain_to_encode:
+                    encoding_output_path =\
+                        os.path.join(output_path,f'encoding_{folder}.csv')
+                    if os.path.exists(encoding_output_path) \
+                            and os.path.getsize(encoding_output_path) > 0:
+                        logging.info(f'     {folder.capitalize()}\'s encoding '
+                                     f'already exists in {encoding_output_path}'
+                                     f'. Skipping encoding to avoid '
+                                     f'overwriting the existing one.')
+                    else:
+                        logging.info(f'     Encoding {folder} to'
+                                     f' {encoding_output_path}')
+
+                        encoder = Encoder(folder, chain, path)
+                        encoder.run_encoding(
+                          output = '{}/encoding_{}.csv'.format(output_path,
+                                                               folder),
+                          n_proc=n_proc,
+                          score_file = '{}/{}_norm_score.csv'
+                                       .format(preprocessing_output, folder))
 
         # Merging encodings
         if 'merge' in keys: 
