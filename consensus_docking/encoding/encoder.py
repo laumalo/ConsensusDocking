@@ -1,4 +1,3 @@
-# General imports
 from multiprocessing import Pool, Array
 from functools import partial
 import os
@@ -18,6 +17,7 @@ logging.basicConfig(
 
 class Encoder:
     """ Encoder object """
+
     def __init__(self, docking_program, chain, docking_path=os.getcwd()):
         """
         It initializes an Encoder object.
@@ -35,7 +35,8 @@ class Encoder:
         self.docking_program = docking_program.lower()
         self.chain = chain
 
-    def get_most_dist_points(self, data, K, MAX_LOOPS=20):
+    @staticmethod
+    def get_most_dist_points(data, K, MAX_LOOPS=20):
         """
         It gets the K most distance points of a given set of coordinates.
 
@@ -113,17 +114,17 @@ class Encoder:
         dist_atoms = self.get_most_dist_points(coords, K=3)
         return df.iloc[dist_atoms]
 
-    def encode_file(self, file_name, atom_lines):
+    @staticmethod
+    def encode_file(file_name, atom_lines):
         """
         It encodes a file given the lines of the three most distant CA. 
 
-        Paramters
+        Parameters
         ---------
         file_name : str
             Path to the file to encode. 
         atom_lines : list
             Lines of the three most distant CA.
-
         """
         try:
             df = pd.DataFrame(columns=('x', 'y', 'z'))
@@ -185,7 +186,7 @@ class Encoder:
                                             'z1', 'x2', 'y2', 'z2', 'x3', 'y3',
                                             'z3'])
 
-        # Parse names and scorings for each file
+        # Parse names and scores for each file
         if score_file is None or not os.path.exists(score_file):
             if score_file is None:
                 logging.warning(f'     Norm_score path was NOT specified,' +
@@ -210,5 +211,7 @@ class Encoder:
                     logging.warning(f'No ids from norm_score coincided with ' +
                                     f'file: {file_names[i]}. Setting 0 value.')
 
+        df_encoding_sorted = df_encoding.sort_values('norm_score',
+                                                     ascending=False)
         # Export output file
-        df_encoding.to_csv(output, index=False)
+        df_encoding_sorted.to_csv(output, index=False)
