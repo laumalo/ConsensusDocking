@@ -297,7 +297,7 @@ def run_filtering(params, path, output_path):
                                               threshold = params['threshold'])
                 scoring_filter.run()
             if 'percentatge' in keys:
-                scoring_filter = FitlerScores(encoding_file = encoding, 
+                scoring_filter = FilterScores(encoding_file = encoding, 
                                               threshold = params['percentatge'])
                 scoring_filter.run()
     else:
