@@ -19,8 +19,8 @@ class TwoStepsClustering:
     It initializates a TwoStepClustering class.
     """
 
-    def __init__(self, encoding_file, n_clusters,
-                 eps_DBSCAN=6, metric_DBSCAN='euclidean'):
+    def __init__(self, encoding_file, n_clusters, eps_DBSCAN=6,
+                 metric_DBSCAN='euclidean'):
         self.encoding_file = encoding_file
         self.n_clusters = n_clusters
         self.eps_DBSCAN = eps_DBSCAN
@@ -33,7 +33,7 @@ class TwoStepsClustering:
         Returns
         -------
         df_coords : pd.Dataframe
-            Dataframe containing all the coordinates. 
+            Dataframe containing all the coordinates.
         file_names : list
             List of all the file names. 
         """
@@ -44,7 +44,8 @@ class TwoStepsClustering:
         file_names = [name[0] for name in df[['ids']].values]
         return df_coords, file_names
 
-    def get_weighted_representatives(self, n_clusters):
+    @staticmethod
+    def get_weighted_representatives(n_clusters):
         """
         It gets the number of K-means clusters to obtain from each DBSCAN 
         cluster.
@@ -150,9 +151,8 @@ class TwoStepsClustering:
                 [k for k, v in d_clusters.items() if v == label]
 
             df_filtered = df[df['ids'].isin(poses_cluster_label)]
-            df_coords_cluster = \
-                df_filtered[
-                    ['x1', 'y1', 'z1', 'x2', 'y2', 'z2', 'x3', 'y3', 'z3']]
+            df_coords_cluster = df_filtered[['x1', 'y1', 'z1', 'x2', 'y2', 'z2',
+                                             'x3', 'y3', 'z3']]
 
             model = KMeans(n_clusters=num_poses)
             model.fit(df_coords_cluster.values)
@@ -165,8 +165,8 @@ class TwoStepsClustering:
                 d_kmeans[cluster_label].append(os.path.basename(file_name))
 
             names = df_filtered[['ids']].values
-            coords = df_filtered[
-                ['x1', 'y1', 'z1', 'x2', 'y2', 'z2', 'x3', 'y3', 'z3']].values
+            coords = df_filtered[['x1', 'y1', 'z1', 'x2', 'y2', 'z2', 'x3',
+                                  'y3', 'z3']].values
 
             d_coods_names = \
                 {name[0]: coord for coord, name in zip(coords, names)}
