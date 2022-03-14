@@ -269,7 +269,9 @@ def run_filtering(params, path, output_path):
         Path to the working folder. 
     """
     if params['method'] == 'MASIF':
+        
         from consensus_docking.filtering import FilterMASIF
+        
         for program in programs:
             masif = FilterMASIF(os.path.join(path, program),
                                 params['patches_proteinA'],
@@ -281,9 +283,23 @@ def run_filtering(params, path, output_path):
                 encoding_file = os.path.join(encodings_output,
                                 f'encoding_{program}.csv'), 
                 file_filtered = output_filtering)
+    
     elif params['method'] == 'SCORE': 
+        
         from consensus_docking.filtering import FilterScores
-        # TO DO  
+
+        keys = [k for k in params]
+        encoding_files = os.listdir(encodings_output)
+        
+        for encoding in encoding_files:
+            if 'threshold' in keys:
+                scoring_filter = FilterScores(encoding_file = encoding, 
+                                              threshold = params['threshold'])
+                scoring_filter.run()
+            if 'percentatge' in keys:
+                scoring_filter = FitlerScores(encoding_file = encoding, 
+                                              threshold = params['percentatge'])
+                scoring_filter.run()
     else:
         raise NotImplementedError 
  

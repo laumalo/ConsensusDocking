@@ -293,7 +293,7 @@ class FilterScores(object):
         structures are kept.
         """
         df_filtered = \
-            self.df_encoding[df_encoding['norm_score'] > self.threshold]
+            self.df_encoding[self.df_encoding['norm_score'] > self.threshold]
 
         # Writes out filtered DataFrame
         out_file = self.encoding_file.replace('.csv', '_filtered.csv')
