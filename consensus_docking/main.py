@@ -281,6 +281,9 @@ def run_filtering(params, path, output_path):
                 encoding_file = os.path.join(encodings_output,
                                 f'encoding_{program}.csv'), 
                 file_filtered = output_filtering)
+    elif params['method'] == 'SCORE': 
+        from consensus_docking.filtering import FilterScores
+        # TO DO  
     else:
         raise NotImplementedError 
  
