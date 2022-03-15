@@ -7,8 +7,8 @@ from functools import partial
 import mdtraj as md
 import tempfile
 import pandas as pd 
-import sys
 
+import sys
 import logging 
 logging.basicConfig(
     format='%(asctime)s [%(module)s] - %(levelname)s: %(message)s',
@@ -18,7 +18,10 @@ logging.basicConfig(
 
 class _Filter(object): 
     """ 
-    It is the Filter base class
+    It is the Filter base class. 
+
+    It filters based on distances between selected sets of CA of the two 
+    (receptor-ligand) proteins.
     """
     _filtering_method = ''
 
@@ -84,7 +87,7 @@ class _Filter(object):
         if file_to_parse.endswith('.pdb'):
             ppdb = PandasPdb().read_pdb(file_to_parse)
 
-        if file_to_parse.endswith('xtc'):
+        if file_to_parse.endswith('.xtc'):
             m = md.load(file_to_parse, top = topology)
             
             with tempfile.NamedTemporaryFile(suffix='.pdb') as tmp:
@@ -129,7 +132,7 @@ class _Filter(object):
         out_file = encoding_file.replace('.csv', '_filtered.csv')
         df_filtered.to_csv(out_file)
 
-    def run(self, d_proteinA, d_proteinB, filter_distance, output , n_proc = 1):
+    def run(self, d_proteinA, d_proteinB, filter_distance, output , n_proc):
         """
         Filters the structures fetched with the filtering criteria (list of CA)
         of the two proteins to be under a certain filtering distance.
@@ -152,10 +155,10 @@ class _Filter(object):
             .format(self._filtering_method))
         
         files_pdb = [os.path.join(self.path, file) 
-                     for file in os.listdir(self.path) if file.endswith('pdb')]
+                     for file in os.listdir(self.path) if file.endswith('.pdb')]
 
         files_xtc = [os.path.join(self.path, file)
-                     for file in os.listdir(self.path) if file.endswith('xtc')]
+                     for file in os.listdir(self.path) if file.endswith('.xtc')]
 
         files = files_xtc if bool(files_xtc) else files_pdb
         topology = files_pdb[0] if bool(files_xtc) else None
@@ -255,6 +258,9 @@ class FilterMASIF(_Filter):
 
 
 class FilterScores(object): 
+    """
+    It defines a Score Filtering.
+    """
     _filtering_method = 'SCORE'
     
     def __init__(self, encoding_file, percentatge = None, threshold = None):
