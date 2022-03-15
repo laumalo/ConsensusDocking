@@ -1,4 +1,4 @@
-from encoding import Encoder
+from consensus_docking.encoding import Encoder
 import argparse as ap
 import os
 
