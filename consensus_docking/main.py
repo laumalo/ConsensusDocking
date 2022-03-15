@@ -235,7 +235,7 @@ def run_filtering(params, data_path, output_path):
 
     if not params['method'] in AVAILABLE_FILTERS: 
         logging.error(f'Invalid filtering method. Available filters ' +
-                      f'are: {AVAILABLE_FILTERS}'.)
+                      f'are: {AVAILABLE_FILTERS}.')
 
     if params['method'] == 'MASIF':
         
