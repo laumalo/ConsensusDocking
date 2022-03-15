@@ -111,7 +111,7 @@ def run_preprocessing(params, data_path, output_path, n_proc):
                     for folder, chains in folder_chain_to_align:
                         chains_to_align = list(chains.split())
                         logging.info('         Aligment of {}:'.format(folder))
-                        folder_path = os.path.join(path, folder)
+                        folder_path = os.path.join(data_path, folder)
                         
                         aligner = Aligner(params['reference'], chains_to_align)
                         aligner.run_aligment(folder_path, chains_to_align,
@@ -324,8 +324,8 @@ def outputs_handler(params):
 
     Parameters
     ----------
-    path : str
-        Dockings path.
+    params : condifparser object
+        Configuration parameters to run the encoding.
     """
     global preprocessing_output, encodings_output, clustering_output, \
            analysis_output
