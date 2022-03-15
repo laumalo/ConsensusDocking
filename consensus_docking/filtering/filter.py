@@ -7,8 +7,8 @@ from functools import partial
 import mdtraj as md
 import tempfile
 import pandas as pd 
-import sys
 
+import sys
 import logging 
 logging.basicConfig(
     format='%(asctime)s [%(module)s] - %(levelname)s: %(message)s',
@@ -18,7 +18,10 @@ logging.basicConfig(
 
 class _Filter(object): 
     """ 
-    It is the Filter base class
+    It is the Filter base class. 
+
+    It filters based on distances between selected sets of CA of the two 
+    (receptor-ligand) proteins.
     """
     _filtering_method = ''
 
@@ -52,7 +55,7 @@ class _Filter(object):
         Returns
         -------
         coords : list
-            CA coordinates. 
+            CA coordinateobjects. 
         """
         df =  ppdb.df['ATOM'][ppdb.df['ATOM']['chain_id'] == chain] \
               [ppdb.df['ATOM']['atom_name'] == 'CA'][ppdb.df['ATOM'] \
@@ -84,7 +87,7 @@ class _Filter(object):
         if file_to_parse.endswith('.pdb'):
             ppdb = PandasPdb().read_pdb(file_to_parse)
 
-        if file_to_parse.endswith('xtc'):
+        if file_to_parse.endswith('.xtc'):
             m = md.load(file_to_parse, top = topology)
             
             with tempfile.NamedTemporaryFile(suffix='.pdb') as tmp:
@@ -119,18 +122,17 @@ class _Filter(object):
         if file_filtered:
             with open(file_filtered, 'r') as f: 
                 lines = f.readlines()
-                filtered_structures = [line.replace('\n', '') 
-                                       for line in lines if not 'gpfs' in line]
+                filtered_structures = [line.replace('\n', '') for line in lines]
         else: 
             filtered_structures = self.filtered_structures
 
         df_encoding = pd.read_csv(encoding_file)
         df_filtered = df_encoding[df_encoding['File'].isin(filtered_structures)]
 
-        out_file = file_filtered.replace('.csv', '_filtered.csv')
+        out_file = encoding_file.replace('.csv', '_filtered.csv')
         df_filtered.to_csv(out_file)
 
-    def run(self, d_proteinA, d_proteinB, filter_distance, output , n_proc = 1):
+    def run(self, d_proteinA, d_proteinB, filter_distance, output , n_proc):
         """
         Filters the structures fetched with the filtering criteria (list of CA)
         of the two proteins to be under a certain filtering distance.
@@ -153,10 +155,10 @@ class _Filter(object):
             .format(self._filtering_method))
         
         files_pdb = [os.path.join(self.path, file) 
-                     for file in os.listdir(self.path) if file.endswith('pdb')]
+                     for file in os.listdir(self.path) if file.endswith('.pdb')]
 
         files_xtc = [os.path.join(self.path, file)
-                     for file in os.listdir(self.path) if file.endswith('xtc')]
+                     for file in os.listdir(self.path) if file.endswith('.xtc')]
 
         files = files_xtc if bool(files_xtc) else files_pdb
         topology = files_pdb[0] if bool(files_xtc) else None
@@ -253,3 +255,72 @@ class FilterMASIF(_Filter):
                  filter_distance = filter_distance, 
                  output = output, 
                  n_proc = n_proc)
+
+
+class FilterScores(object): 
+    """
+    It defines a Score Filtering.
+    """
+    _filtering_method = 'SCORE'
+    
+    def __init__(self, encoding_file, percentatge = None, threshold = None):
+        """
+        It initializes the FilterScores class.
+
+        Parameters
+        ----------
+        encoding_file : str
+            Path to the endoding file containing the normalized scores. 
+        percentatge : float
+            Percentatge of structures to keep according to normalized scores. 
+        theshold : float
+            Score threshold above which structures are kept.             
+        """
+        self.encoding_file = encoding_file
+        self.df_encoding = pd.read_csv(self.encoding_file)
+        self.percentatge = percentatge
+        self.threshold = threshold
+
+    def _filter_by_percentatge(self):
+        """
+        It filters the structures by a percentatge ordered by their normalized
+        score.
+        """ 
+        filtered_registers = int(len(self.df_encoding.index) * self.percentatge)
+        df_filtered = self.df_encoding.head(filtered_registers)
+
+        # Writes out filtered DataFrame
+        out_file = self.encoding_file.replace('.csv', '_filtered.csv')
+        df_filtered.to_csv(out_file)
+    
+    def _filter_by_threshold(self):
+        """
+        It filters the structures by a normalized score threshold above which 
+        structures are kept.
+        """
+        df_filtered = \
+            self.df_encoding[self.df_encoding['norm_score'] > self.threshold]
+
+        # Writes out filtered DataFrame
+        out_file = self.encoding_file.replace('.csv', '_filtered.csv')
+        df_filtered.to_csv(out_file)
+    
+    def run(self):
+        """
+        It runs the filtering based on the computed normalized scores.
+        """
+        if self.percentatge is None and self.threshold is None:
+            logging.error(
+                ' You have to specify either a percentatge or a threshold.')
+        if self.percentatge is not None and self.threshold is not None:
+            logging.error(
+                'You can only specify either a percentatge or a threshold, ' + 
+                'not both.')
+
+        # By percentatge
+        if self.percentatge():
+            self._filter_by_percentatge()
+        
+        # By threshold
+        if self._threshold():
+            self._filter_by_threshold()
