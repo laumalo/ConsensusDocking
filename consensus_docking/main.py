@@ -47,8 +47,8 @@ def parse_conf_file(conf_file):
         Configuration parameters for all the blocks.
     """
 
-    AVAILABLE_BLOCKS = ['paths','preprocessing', 'encoding', 'filtering', 
-                        'clustering', 'analysis']
+    AVAILABLE_BLOCKS = \
+        ['paths','preprocessing', 'encoding', 'clustering', 'analysis']
     
     config = configparser.ConfigParser()
     config.read(conf_file)
@@ -65,7 +65,7 @@ def parse_conf_file(conf_file):
             logging.info('     - {}'.format(block))
     return ordered_blocks, config
 
-def run_preprocessing(params, data_path, output_path, n_proc):
+def run_preprocessing(params, path, output_path, n_proc):
     """
     It runs the preprocessing block. 
 
@@ -73,10 +73,8 @@ def run_preprocessing(params, data_path, output_path, n_proc):
     ----------
     params : condifparser object
         Configuration parameters to run the encoding.
-    data_path : str
-        Path to the folder containing the docking data. 
-    output_path : str
-        Output path.
+    path : str
+        Path to the working folder. 
     n_proc : int
         Number of processors. 
     """
@@ -85,7 +83,7 @@ def run_preprocessing(params, data_path, output_path, n_proc):
 
     AVAILABLE_KEYS = ['reference', 'align', 'parser', 'scoring_files']
     keys = [k for k in params]
-    folders = os.listdir(data_path)
+    folders = os.listdir(path)
 
     if not all([k in AVAILABLE_KEYS for k in keys]): 
         logging.error('Invalid preprocessing block configuration.')
@@ -105,13 +103,14 @@ def run_preprocessing(params, data_path, output_path, n_proc):
                     .split(','))]
                 folder_chain_to_align = \
                     [list(f.split('_')) for f in folders_to_align]
-                if not all([f in folders for f, c in folders_to_align]):
+
+                if not all([f in folders for f, c in folder_chain_to_align]):
                     logging.error('Wrong selection of folders to align.')
                 else: 
                     for folder, chains in folder_chain_to_align:
                         chains_to_align = list(chains.split())
                         logging.info('         Aligment of {}:'.format(folder))
-                        folder_path = os.path.join(data_path, folder)
+                        folder_path = os.path.join(path, folder)
                         
                         aligner = Aligner(params['reference'], chains_to_align)
                         aligner.run_aligment(folder_path, chains_to_align,
@@ -137,11 +136,11 @@ def run_preprocessing(params, data_path, output_path, n_proc):
                 else: 
                     for folder, file in folders_file_to_parse:
                         # Parsing
-                        parser = Parser(folder, file, data_path)
+                        parser = Parser(folder, file, path)
                         parser.run(output_folder = output_path)
 
 
-def run_encoding(params, data_path, output_path, n_proc):
+def run_encoding(params, path, output_path, n_proc):
     """
     It runs the encoding block. 
 
@@ -149,10 +148,8 @@ def run_encoding(params, data_path, output_path, n_proc):
     ----------
     params : condifparser object
         Configuration parameters to run the encoding.
-    data_path : str
-        Path to the folder containing the docking data. 
-    output_path : str
-        Output path.
+    path : str
+        Path to the working folder. 
     n_proc : int
         Number of processors. 
     """
@@ -163,7 +160,7 @@ def run_encoding(params, data_path, output_path, n_proc):
     AVAILABLE_KEYS = ['encode', 'merge']
     keys = [k for k in params]
 
-    available_folders = os.listdir(data_path)
+    available_folders = os.listdir(path)
 
     if not all([k in AVAILABLE_KEYS for k in keys]): 
         logging.error('Invalid encoding block configuration.')
@@ -181,26 +178,16 @@ def run_encoding(params, data_path, output_path, n_proc):
                 [f in available_folders for f,c in folder_chain_to_encode]):
                 logging.error('Wrong selection of folders to encode.')
             else:
-                for folder, chain in folder_chain_to_encode:
-                    encoding_output_path =\
-                        os.path.join(output_path,f'encoding_{folder}.csv')
-                    if os.path.exists(encoding_output_path) \
-                            and os.path.getsize(encoding_output_path) > 0:
-                        logging.info(f'     {folder.capitalize()}\'s encoding '
-                                     f'already exists in {encoding_output_path}'
-                                     f'. Skipping encoding to avoid '
-                                     f'overwriting the existing one.')
-                    else:
-                        logging.info(f'     Encoding {folder} to'
-                                     f' {encoding_output_path}')
-
-                        encoder = Encoder(folder, chain, data_path)
-                        encoder.run_encoding(
-                          output = '{}/encoding_{}.csv'.format(output_path,
-                                                               folder),
-                          n_proc=n_proc,
-                          score_file = '{}/{}_norm_score.csv'
-                                       .format(preprocessing_output, folder))
+                for folder, chain in folder_chain_to_encode: 
+                    logging.info('     Encoding {} to {}'.format(folder,
+                        '{}/encoding_{}.csv'.format(output_path, folder)))
+                    
+                    encoder = Encoder(folder, chain, path)
+                    encoder.run_encoding(
+                      output = '{}/encoding_{}.csv'.format(output_path, folder),
+                      n_proc=n_proc,                      
+                      score_file = '{}/{}_norm_score.csv'
+                                   .format(preprocessing_output, folder))
 
         # Merging encodings
         if 'merge' in keys: 
@@ -218,61 +205,7 @@ def run_encoding(params, data_path, output_path, n_proc):
                               index=False, encoding='utf-8-sig')
             logging.info('     Encoding saved to {}'.format(merged_csv_output))
 
-def run_filtering(params, data_path, output_path):
-    """
-    It runs the filtering block. 
-
-    Parameters
-    ----------
-    params : condifparser object
-        Configuration parameters to run the filtering.
-    data_path : str
-        Path to the folder containing the docking data. 
-    output_path : str
-        Output path.
-    """
-    AVAILABLE_FILTERS = ['MASIF', 'SCORES']
-
-    if not params['method'] in AVAILABLE_FILTERS: 
-        logging.error(f'Invalid filtering method. Available filters ' +
-                      f'are: {AVAILABLE_FILTERS}.')
-
-    if params['method'] == 'MASIF':
-        
-        from consensus_docking.filtering import FilterMASIF
-        
-        for program in programs:
-            masif = FilterMASIF(os.path.join(data_path, program),
-                                params['patches_proteinA'],
-                                params['patches_proteinB'])
-            output_filtering = os.path.join(output_path,
-                                            f'filtering_{program}.csv')
-            masif.run_filtering(output_filtering)
-            masif.filter_encoding_file(
-                encoding_file = os.path.join(encodings_output,
-                                f'encoding_{program}.csv'), 
-                file_filtered = output_filtering)
-    
-    elif params['method'] == 'SCORE': 
-        
-        from consensus_docking.filtering import FilterScores
-
-        keys = [k for k in params]
-        encoding_files = os.listdir(encodings_output)
-        
-        for encoding in encoding_files:
-            if 'threshold' in keys:
-                scoring_filter = FilterScores(encoding_file = encoding, 
-                                              threshold = params['threshold'])
-                scoring_filter.run()
-            if 'percentatge' in keys:
-                scoring_filter = FilterScores(encoding_file = encoding, 
-                                              threshold = params['percentatge'])
-                scoring_filter.run()
-    else:
-        raise NotImplementedError 
-
-def run_clustering(params, data_path, output_path):
+def run_clustering(params, path, output_path, n_proc):
     """
     It runs the clustering block.
 
@@ -280,10 +213,10 @@ def run_clustering(params, data_path, output_path):
     ----------
     params : condifparser object
         Configuration parameters to run the encoding.
-    data_path : str
-        Path to the folder containing the docking data. 
-    output_path : str
-        Output path.
+    path : str
+        Path to the working folder. 
+    n_proc : int
+        Number of processors. 
     """
     AVAILABLE_CLUSTERINGS = ['DBSCAN-Kmeans']
 
@@ -293,28 +226,35 @@ def run_clustering(params, data_path, output_path):
     else: 
         if params['clustering_algorithm'] == 'DBSCAN-Kmeans':
             logging.info('  Running Two-Step clustering algorithm.')
+
             # Optional parameters
             DEFAULT_CLUSTERS = 30
             DEFAULT_EPS_DBSCAN = 6
             DEFAULT_DBSCAN_METRIC = 'euclidian'
+            DEFAULT_NN_ANALYSIS = False
             n_clusters = int(params['n_clusters']) if 'n_clusters' in params \
                          else DEFAULT_CLUSTERS
             eps_DBSCAN = int(params['eps_DBSCAN']) if 'eps_DBSCAN' in params \
                          else DEFAULT_EPS_DBSCAN
             metric_DBSCAN =  params['metric_DBSCAN'] if 'metric_DBSCAN' \
                              in params else DEFAULT_DBSCAN_METRIC
-            
+            near_native_analysis =  bool(params['near_natives_analysis']) if \
+                                    'near_natives_analysis' in params \
+                                    else DEFAULT_NN_ANALYSIS
+
             # Clustering
             from consensus_docking.clustering import TwoStepsClustering 
             clustering = TwoStepsClustering(
                 encoding_file = params['encoding_file'],
                 n_clusters = n_clusters,
                 eps_DBSCAN = eps_DBSCAN,
-                metric_DBSCAN = metric_DBSCAN)
+                metric_DBSCAN = metric_DBSCAN,
+                near_native_analysis = near_native_analysis,
+                rmsd_folder = os.path.join(analysis_output, 'rmsd'))
             clustering.run()
- 
-    
-def run_analysis(params, data_path, output_path): 
+                           
+
+def run_analysis(params, path, output_path, n_pro): 
     pass 
 
 
@@ -324,12 +264,12 @@ def outputs_handler(params):
 
     Parameters
     ----------
-    params : condifparser object
-        Configuration parameters to run the encoding.
+    path : str
+        Docking data path.
     """
     global preprocessing_output, encodings_output, clustering_output, \
            analysis_output
-           
+
     output_path = os.path.join(params['input_data'], params['output'])
     os.makedirs(output_path, exist_ok = True)
 
@@ -357,17 +297,15 @@ def main(args):
     args : argparse.Namespace
         It contains the command-line arguments that are supplied by the user
     """
-    global programs 
-
     # Parse configuration file
     blocks, params = parse_conf_file(args.conf_file)
     
     # Check docking conformations
     AVAILABLE_PROGRAMS = ['ftdock', 'zdock', 'lightdock', 'frodock',
                           'patchdock', 'piper', 'rosetta']
-    ignored_folders = [params['paths']['output']]
+    ignored_folders = ['output', os.path.basename(params['paths']['output'])]
     programs = [p for p in os.listdir(params['paths']['input_data']) 
-                if not p in ignored_folders and not p.startswith('output')] 
+                if not p in ignored_folders] 
     checker = all([program in AVAILABLE_PROGRAMS for program in programs])
     if not checker:
         logging.error('Wrong docking program.')
@@ -385,15 +323,12 @@ def main(args):
             if block == 'encoding': 
                 run_encoding(params[block], params['paths']['input_data'],
                              encodings_output, args.n_proc)
-            if block == 'filtering':
-                run_filtering(params[block], params['paths']['input_data'], 
-                              preprocessing_output)
             if block == 'clustering': 
                 run_clustering(params[block], params['paths']['input_data'],
-                               clustering_output)
+                               clustering_output, args.n_proc)
             if block == 'analysis': 
                 run_analysis(params[block], params['paths']['input_data'],
-                         analysis_output)
+                         analysis_output, args.n_proc)
 
 
 if __name__ == '__main__':
